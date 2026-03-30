@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/network-verifier-output.schema.json",
+  "title": "NetworkVerifierOutput",
+  "description": "Output from the deterministic Network Verifier module.",
+  "type": "object",
+  "required": [
+    "api_calls_total",
+    "api_calls_matched_codeintel",
+    "api_calls_unmatched",
+    "api_errors_during_normal_flow",
+    "deal_breakers",
+    "issues"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "api_calls_total": {
+      "type": "integer",
+      "description": "Total number of API calls made during the session.",
+      "minimum": 0
+    },
+    "api_calls_matched_codeintel": {
+      "type": "integer",
+      "description": "Number of API calls that matched an endpoint documented in codeintel.",
+      "minimum": 0
+    },
+    "api_calls_unmatched": {
+      "type": "integer",
+      "description": "Number of API calls that did not match any codeintel endpoint.",
+      "minimum": 0
+    },
+    "api_errors_during_normal_flow": {
+      "type": "integer",
+      "description": "Number of API errors (4xx/5xx) that occurred during normal (non-error-test) flows.",
+      "minimum": 0
+    },
+    "auth_token_set_after_auth": {
+      "type": "boolean",
+      "description": "Whether an auth token was observed to be set after the authentication step."
+    },
+    "auth_token_sent_on_protected_requests": {
+      "type": "boolean",
+      "description": "Whether the auth token was sent on requests to protected endpoints."
+    },
+    "auth_persists_after_refresh": {
+      "type": "boolean",
+      "description": "Whether the auth session persisted after a page refresh."
+    },
+    "deal_breakers": {
+      "type": "array",
+      "description": "Critical issues that constitute deal-breakers for the session.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "issues": {
+      "type": "array",
+      "description": "Non-critical issues observed during network verification.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "per_endpoint": {
+      "type": "array",
+      "description": "Per-endpoint breakdown of network verification results.",
+      "items": {
+        "type": "object",
+        "required": ["method", "path", "matched_codeintel", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "HTTP method of the request (e.g. GET, POST, PUT, DELETE)."
+          },
+          "path": {
+            "type": "string",
+            "description": "URL path of the endpoint (may be templated, e.g. /api/users/{id})."
+          },
+          "matched_codeintel": {
+            "type": "boolean",
+            "description": "Whether this endpoint was matched against a codeintel definition."
+          },
+          "status": {
+            "type": "integer",
+            "description": "HTTP status code observed in the response.",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "expected_status": {
+            "type": "integer",
+            "description": "HTTP status code expected per codeintel or spec.",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "contract_match": {
+            "type": "boolean",
+            "description": "Whether the response matched the codeintel contract (shape, status, etc.)."
+          },
+          "auth_check": {
+            "type": "string",
+            "description": "Result of auth verification for this endpoint (e.g. 'N/A (public endpoint)', 'PASS', 'FAIL')."
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/navigator-output.schema.json",
+  "title": "NavigatorOutput",
+  "description": "Full output produced by the Navigator agent after a browsing session.",
+  "type": "object",
+  "required": [
+    "version",
+    "status",
+    "elapsed_seconds",
+    "persona",
+    "url",
+    "manifest_coverage",
+    "pages"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema or agent version string."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DONE", "ERROR", "SKIP", "PARTIAL"],
+      "description": "Overall completion status of the navigation session."
+    },
+    "elapsed_seconds": {
+      "type": "number",
+      "description": "Total elapsed time for the navigation session in seconds.",
+      "minimum": 0
+    },
+    "persona": {
+      "type": "string",
+      "description": "Name or identifier of the persona used for this session."
+    },
+    "url": {
+      "type": "string",
+      "description": "Root URL that was navigated."
+    },
+    "scope": {
+      "type": "string",
+      "description": "Optional scope or focus area for this navigation session."
+    },
+    "agent_result": {
+      "type": "string",
+      "description": "Backward-compatibility narrative summary produced by the agent."
+    },
+    "manifest_coverage": {
+      "type": "object",
+      "description": "Coverage of the expected page manifest.",
+      "required": [],
+      "additionalProperties": false,
+      "properties": {
+        "expected_pages": {
+          "type": "array",
+          "description": "Pages listed in the manifest that were expected to be visited.",
+          "items": { "type": "string" }
+        },
+        "visited": {
+          "type": "array",
+          "description": "Pages from the manifest that were actually visited.",
+          "items": { "type": "string" }
+        },
+        "not_visited": {
+          "type": "array",
+          "description": "Pages from the manifest that were not visited.",
+          "items": { "type": "string" }
+        },
+        "unexpected_pages": {
+          "type": "array",
+          "description": "Pages visited that were not in the manifest.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "description": "Detailed per-page observations captured during the session.",
+      "items": {
+        "type": "object",
+        "required": ["id", "url_visited", "observations"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this page visit."
+          },
+          "url_visited": {
+            "type": "string",
+            "description": "Actual URL visited for this page."
+          },
+          "screenshot": {
+            "type": "string",
+            "description": "File path or URL of the screenshot taken for this page."
+          },
+          "observations": {
+            "type": "object",
+            "required": ["description"],
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Narrative description of what was observed on this page."
+              },
+              "actions": {
+                "type": "array",
+                "description": "Sequence of actions performed on this page.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "step": {
+                      "type": "integer",
+                      "description": "Step number in the action sequence."
+                    },
+                    "action": {
+                      "type": "string",
+                      "description": "Description of the action taken."
+                    },
+                    "result": {
+                      "type": "string",
+                      "description": "Observed result of the action."
+                    }
+                  }
+                }
+              },
+              "forms": {
+                "type": "array",
+                "description": "Forms encountered on this page.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "fields_seen": {
+                      "type": "array",
+                      "description": "Form fields visible on this form.",
+                      "items": { "type": "string" }
+                    },
+                    "submitted": {
+                      "type": "boolean",
+                      "description": "Whether the form was submitted during the session."
+                    },
+                    "errors_encountered": {
+                      "type": "array",
+                      "description": "Validation or submission errors encountered.",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "network_log": {
+            "type": "array",
+            "description": "Network requests captured while on this page.",
+            "items": {
+              "$ref": "https://persona-browser-agent/schemas/network-log-entry.schema.json"
+            }
+          }
+        }
+      }
+    },
+    "auth_flow_verification": {
+      "type": "object",
+      "description": "Observations about the authentication flow during the session.",
+      "additionalProperties": false,
+      "properties": {
+        "auth_completed": {
+          "type": "boolean",
+          "description": "Whether the authentication flow completed successfully."
+        },
+        "auth_mechanism_observed": {
+          "type": "string",
+          "description": "Description of the authentication mechanism observed (e.g. JWT, session cookie)."
+        },
+        "post_auth_access": {
+          "type": "string",
+          "description": "Description of access state observed after authentication."
+        },
+        "persistence_after_refresh": {
+          "type": "string",
+          "description": "Description of auth persistence behavior after page refresh."
+        },
+        "logout_test": {
+          "type": ["string", "null"],
+          "description": "Result of logout testing, or null if not tested."
+        }
+      }
+    },
+    "experience": {
+      "type": "object",
+      "description": "Persona's subjective experience of the application.",
+      "additionalProperties": false,
+      "properties": {
+        "first_impression": {
+          "type": "string",
+          "description": "Persona's first impression of the application."
+        },
+        "easy": {
+          "type": "array",
+          "description": "Things the persona found easy to do.",
+          "items": { "type": "string" }
+        },
+        "hard": {
+          "type": "array",
+          "description": "Things the persona found difficult.",
+          "items": { "type": "string" }
+        },
+        "hesitation_points": {
+          "type": "array",
+          "description": "Points where the persona hesitated or was unsure.",
+          "items": { "type": "string" }
+        },
+        "would_return": {
+          "type": "boolean",
+          "description": "Whether the persona would return to use the application again."
+        },
+        "would_recommend": {
+          "type": "string",
+          "description": "Whether and why the persona would recommend the application."
+        },
+        "satisfaction": {
+          "type": "integer",
+          "description": "Overall satisfaction score from 1 (worst) to 10 (best).",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "satisfaction_reason": {
+          "type": "string",
+          "description": "Explanation of the satisfaction score."
+        }
+      }
+    },
+    "screenshots": {
+      "type": "array",
+      "description": "File paths or URLs of all screenshots taken during the session.",
+      "items": { "type": "string" }
+    },
+    "video": {
+      "type": "string",
+      "description": "File path or URL of the session recording video, if captured."
+    }
+  }
+}

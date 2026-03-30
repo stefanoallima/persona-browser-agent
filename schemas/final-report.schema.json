@@ -1,0 +1,496 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/final-report.schema.json",
+  "title": "FinalReport",
+  "description": "Score Reconciler's final report combining text scorer, visual scorer, network verifier, and navigator outputs.",
+  "type": "object",
+  "required": [
+    "version",
+    "status",
+    "elapsed_seconds",
+    "persona",
+    "url",
+    "manifest_coverage",
+    "pages",
+    "summary"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema or pipeline version string."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DONE", "ERROR", "SKIP", "PARTIAL"],
+      "description": "Overall completion status of the pipeline run."
+    },
+    "elapsed_seconds": {
+      "type": "number",
+      "description": "Total elapsed time for the full pipeline run in seconds.",
+      "minimum": 0
+    },
+    "persona": {
+      "type": "string",
+      "description": "Name or identifier of the persona used for this report."
+    },
+    "url": {
+      "type": "string",
+      "description": "Root URL that was evaluated."
+    },
+    "scope": {
+      "type": "string",
+      "description": "Optional scope or focus area for this evaluation."
+    },
+    "agent_result": {
+      "type": "string",
+      "description": "Backward-compatibility narrative summary from the navigator agent."
+    },
+    "manifest_coverage": {
+      "type": "object",
+      "description": "Coverage of the expected page manifest.",
+      "additionalProperties": false,
+      "properties": {
+        "expected_pages": {
+          "type": "array",
+          "description": "Pages listed in the manifest that were expected to be visited.",
+          "items": { "type": "string" }
+        },
+        "visited": {
+          "type": "array",
+          "description": "Pages from the manifest that were actually visited.",
+          "items": { "type": "string" }
+        },
+        "not_visited": {
+          "type": "array",
+          "description": "Pages from the manifest that were not visited.",
+          "items": { "type": "string" }
+        },
+        "unexpected_pages": {
+          "type": "array",
+          "description": "Pages visited that were not in the manifest.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "description": "Per-page reconciled scoring results.",
+      "items": {
+        "type": "object",
+        "required": ["id", "url_visited", "observations", "pb_criteria", "consumer_criteria", "deal_breakers"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this page."
+          },
+          "url_visited": {
+            "type": "string",
+            "description": "Actual URL visited for this page."
+          },
+          "screenshot": {
+            "type": "string",
+            "description": "File path or URL of the screenshot for this page."
+          },
+          "features_detected": {
+            "type": "array",
+            "description": "UI features detected on the page (from the visual scorer).",
+            "items": { "type": "string" }
+          },
+          "observations": {
+            "type": "object",
+            "required": ["description"],
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Narrative description of what was observed on this page."
+              },
+              "actions": {
+                "type": "array",
+                "description": "Sequence of actions performed on this page.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "step": { "type": "integer" },
+                    "action": { "type": "string" },
+                    "result": { "type": "string" }
+                  }
+                }
+              },
+              "forms": {
+                "type": "array",
+                "description": "Forms encountered on this page.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "fields_seen": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "submitted": { "type": "boolean" },
+                    "errors_encountered": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "pb_criteria": {
+            "type": "array",
+            "description": "Reconciled product-behaviour criteria for this page.",
+            "items": {
+              "type": "object",
+              "required": ["feature", "criterion", "text_result", "visual_result", "reconciled", "confidence", "evidence", "discrepancy"],
+              "additionalProperties": false,
+              "properties": {
+                "feature": {
+                  "type": "string",
+                  "description": "UI feature area the criterion applies to."
+                },
+                "criterion": {
+                  "type": "string",
+                  "description": "Human-readable description of what was evaluated."
+                },
+                "text_result": {
+                  "type": "string",
+                  "enum": ["PASS", "FAIL", "UNKNOWN"],
+                  "description": "Result from the text scorer."
+                },
+                "visual_result": {
+                  "type": "string",
+                  "enum": ["PASS", "FAIL", "UNKNOWN"],
+                  "description": "Result from the visual scorer."
+                },
+                "reconciled": {
+                  "type": "string",
+                  "enum": ["PASS", "FAIL", "UNKNOWN"],
+                  "description": "Final reconciled result."
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low"],
+                  "description": "Confidence level in the reconciled result."
+                },
+                "evidence": {
+                  "type": "string",
+                  "description": "Combined evidence used to reach the reconciled result."
+                },
+                "discrepancy": {
+                  "type": ["string", "null"],
+                  "description": "Description of any discrepancy between text and visual results, or null if none."
+                }
+              }
+            }
+          },
+          "consumer_criteria": {
+            "type": "array",
+            "description": "Reconciled consumer-experience criteria for this page.",
+            "items": {
+              "type": "object",
+              "required": ["criterion", "text_result", "visual_result", "reconciled", "confidence", "evidence", "discrepancy"],
+              "additionalProperties": false,
+              "properties": {
+                "criterion": {
+                  "type": "string",
+                  "description": "Human-readable description of the consumer criterion."
+                },
+                "text_result": {
+                  "type": "string",
+                  "enum": ["PASS", "FAIL", "UNKNOWN"],
+                  "description": "Result from the text scorer."
+                },
+                "visual_result": {
+                  "type": "string",
+                  "enum": ["PASS", "FAIL", "UNKNOWN"],
+                  "description": "Result from the visual scorer."
+                },
+                "reconciled": {
+                  "type": "string",
+                  "enum": ["PASS", "FAIL", "UNKNOWN"],
+                  "description": "Final reconciled result."
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low"],
+                  "description": "Confidence level in the reconciled result."
+                },
+                "evidence": {
+                  "type": "string",
+                  "description": "Combined evidence used to reach the reconciled result."
+                },
+                "codeintel_ref": {
+                  "type": "string",
+                  "description": "Optional reference to a codeintel path relevant to this criterion."
+                },
+                "discrepancy": {
+                  "type": ["string", "null"],
+                  "description": "Description of any discrepancy between text and visual results, or null if none."
+                }
+              }
+            }
+          },
+          "deal_breakers": {
+            "type": "array",
+            "description": "Deal-breaker issues identified on this page.",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "experience": {
+      "type": "object",
+      "description": "Persona's subjective experience of the application.",
+      "additionalProperties": false,
+      "properties": {
+        "first_impression": {
+          "type": "string",
+          "description": "Persona's first impression of the application."
+        },
+        "easy": {
+          "type": "array",
+          "description": "Things the persona found easy to do.",
+          "items": { "type": "string" }
+        },
+        "hard": {
+          "type": "array",
+          "description": "Things the persona found difficult.",
+          "items": { "type": "string" }
+        },
+        "hesitation_points": {
+          "type": "array",
+          "description": "Points where the persona hesitated or was unsure.",
+          "items": { "type": "string" }
+        },
+        "would_return": {
+          "type": "boolean",
+          "description": "Whether the persona would return to use the application again."
+        },
+        "would_recommend": {
+          "type": "string",
+          "description": "Whether and why the persona would recommend the application."
+        },
+        "satisfaction": {
+          "type": "integer",
+          "description": "Overall satisfaction score from 1 (worst) to 10 (best).",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "satisfaction_reason": {
+          "type": "string",
+          "description": "Explanation of the satisfaction score."
+        }
+      }
+    },
+    "network_verification": {
+      "type": "object",
+      "description": "Network verifier results, with an added _source field for traceability.",
+      "additionalProperties": false,
+      "properties": {
+        "_source": {
+          "type": "string",
+          "description": "Identifier or path indicating the source of these network verification results."
+        },
+        "api_calls_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "api_calls_matched_codeintel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "api_calls_unmatched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "api_errors_during_normal_flow": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auth_token_set_after_auth": {
+          "type": "boolean"
+        },
+        "auth_token_sent_on_protected_requests": {
+          "type": "boolean"
+        },
+        "auth_persists_after_refresh": {
+          "type": "boolean"
+        },
+        "deal_breakers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "per_endpoint": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["method", "path", "matched_codeintel", "status"],
+            "additionalProperties": false,
+            "properties": {
+              "method": { "type": "string" },
+              "path": { "type": "string" },
+              "matched_codeintel": { "type": "boolean" },
+              "status": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "expected_status": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "contract_match": { "type": "boolean" },
+              "auth_check": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "verification_tasks": {
+      "type": "array",
+      "description": "Explicit verification tasks and their outcomes.",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "result", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for this verification task."
+          },
+          "type": {
+            "type": "string",
+            "description": "Category or type of verification task."
+          },
+          "result": {
+            "type": "string",
+            "enum": ["PASS", "FAIL"],
+            "description": "Outcome of the verification task."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence supporting the result."
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregate counts and highlights across all pages and verifications.",
+      "required": [
+        "pb_criteria_total",
+        "pb_criteria_passed",
+        "pb_criteria_failed",
+        "pb_criteria_unknown",
+        "consumer_criteria_total",
+        "consumer_criteria_passed",
+        "consumer_criteria_failed",
+        "verification_tasks_total",
+        "verification_tasks_passed",
+        "verification_tasks_failed",
+        "network_issues",
+        "total_discrepancies",
+        "deal_breakers_triggered",
+        "pages_with_failures",
+        "pages_clean"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pb_criteria_total": {
+          "type": "integer",
+          "description": "Total number of product-behaviour criteria evaluated.",
+          "minimum": 0
+        },
+        "pb_criteria_passed": {
+          "type": "integer",
+          "description": "Number of product-behaviour criteria that passed.",
+          "minimum": 0
+        },
+        "pb_criteria_failed": {
+          "type": "integer",
+          "description": "Number of product-behaviour criteria that failed.",
+          "minimum": 0
+        },
+        "pb_criteria_unknown": {
+          "type": "integer",
+          "description": "Number of product-behaviour criteria with unknown result.",
+          "minimum": 0
+        },
+        "consumer_criteria_total": {
+          "type": "integer",
+          "description": "Total number of consumer-experience criteria evaluated.",
+          "minimum": 0
+        },
+        "consumer_criteria_passed": {
+          "type": "integer",
+          "description": "Number of consumer-experience criteria that passed.",
+          "minimum": 0
+        },
+        "consumer_criteria_failed": {
+          "type": "integer",
+          "description": "Number of consumer-experience criteria that failed.",
+          "minimum": 0
+        },
+        "verification_tasks_total": {
+          "type": "integer",
+          "description": "Total number of explicit verification tasks.",
+          "minimum": 0
+        },
+        "verification_tasks_passed": {
+          "type": "integer",
+          "description": "Number of verification tasks that passed.",
+          "minimum": 0
+        },
+        "verification_tasks_failed": {
+          "type": "integer",
+          "description": "Number of verification tasks that failed.",
+          "minimum": 0
+        },
+        "network_issues": {
+          "type": "integer",
+          "description": "Total number of network issues (non-critical) recorded.",
+          "minimum": 0
+        },
+        "total_discrepancies": {
+          "type": "integer",
+          "description": "Total number of discrepancies between text and visual scorer results.",
+          "minimum": 0
+        },
+        "deal_breakers_triggered": {
+          "type": "array",
+          "description": "List of deal-breaker descriptions triggered across all pages and network verification.",
+          "items": { "type": "string" }
+        },
+        "pages_with_failures": {
+          "type": "array",
+          "description": "Page IDs that have at least one FAIL criterion or deal-breaker.",
+          "items": { "type": "string" }
+        },
+        "pages_clean": {
+          "type": "array",
+          "description": "Page IDs with no failures and no deal-breakers.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "screenshots": {
+      "type": "array",
+      "description": "File paths or URLs of all screenshots collected during the session.",
+      "items": { "type": "string" }
+    },
+    "video": {
+      "type": "string",
+      "description": "File path or URL of the session recording video, if captured."
+    }
+  }
+}

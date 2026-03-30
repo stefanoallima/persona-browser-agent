@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/text-scorer-output.schema.json",
+  "title": "TextScorerOutput",
+  "description": "Per-page output from the Text Scorer agent.",
+  "type": "object",
+  "required": ["page_id", "pb_criteria", "consumer_criteria"],
+  "additionalProperties": false,
+  "properties": {
+    "page_id": {
+      "type": "string",
+      "description": "Identifier of the page being scored, matching the id field in navigator output."
+    },
+    "pb_criteria": {
+      "type": "array",
+      "description": "Product-behaviour criteria evaluated by the text scorer.",
+      "items": {
+        "type": "object",
+        "required": ["feature", "criterion", "result", "evidence", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "feature": {
+            "type": "string",
+            "description": "UI feature area the criterion applies to (e.g. 'forms', 'navigation')."
+          },
+          "criterion": {
+            "type": "string",
+            "description": "Human-readable description of what is being evaluated."
+          },
+          "result": {
+            "type": "string",
+            "enum": ["PASS", "FAIL", "UNKNOWN"],
+            "description": "Outcome of the criterion evaluation."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Textual evidence the scorer observed to reach the result."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Confidence level in the result."
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional additional commentary or clarification."
+          }
+        }
+      }
+    },
+    "consumer_criteria": {
+      "type": "array",
+      "description": "Consumer-experience criteria evaluated by the text scorer.",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "result", "evidence", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "description": "Human-readable description of the consumer criterion being evaluated."
+          },
+          "result": {
+            "type": "string",
+            "enum": ["PASS", "FAIL", "UNKNOWN"],
+            "description": "Outcome of the criterion evaluation."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Textual evidence the scorer observed to reach the result."
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Confidence level in the result."
+          },
+          "codeintel_ref": {
+            "type": "string",
+            "description": "Optional reference to a codeintel path relevant to this criterion."
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional additional commentary or clarification."
+          }
+        }
+      }
+    }
+  }
+}
