@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/network-log-entry.schema.json",
+  "title": "NetworkLogEntry",
+  "description": "A single entry in the network_log array captured during a browser automation session.",
+  "type": "object",
+  "required": ["method", "url", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "method": {
+      "type": "string",
+      "description": "HTTP method of the request (e.g. GET, POST)."
+    },
+    "url": {
+      "type": "string",
+      "description": "Full URL of the request."
+    },
+    "status": {
+      "type": "integer",
+      "description": "HTTP response status code.",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "timing_ms": {
+      "type": "number",
+      "description": "Round-trip time for the request in milliseconds.",
+      "minimum": 0
+    },
+    "trigger": {
+      "type": "string",
+      "description": "The navigator step or user action that triggered this network request."
+    },
+    "request_content_type": {
+      "type": "string",
+      "description": "Content-Type header of the request (e.g. application/json, multipart/form-data)."
+    },
+    "request_body": {
+      "type": "string",
+      "description": "Serialized request body (may be truncated for large payloads)."
+    },
+    "response_summary": {
+      "type": "string",
+      "description": "Brief summary or excerpt of the response body."
+    },
+    "set_cookie": {
+      "type": "string",
+      "description": "Value of the Set-Cookie response header. May not be available for httpOnly cookies."
+    },
+    "request_headers_note": {
+      "type": "string",
+      "description": "Noteworthy request headers (e.g. Authorization present, Cookie sent)."
+    }
+  }
+}

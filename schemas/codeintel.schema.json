@@ -1,0 +1,443 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/codeintel.schema.json",
+  "title": "CodeIntel",
+  "description": "Static analysis of the application's code: pages, API endpoints, auth, and data flows.",
+  "type": "object",
+  "required": ["version", "pages", "api_endpoints"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version identifier."
+    },
+    "generated_from": {
+      "type": "string",
+      "description": "Git SHA of the commit this report was generated from."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this report was generated."
+    },
+    "pages": {
+      "type": "array",
+      "description": "Frontend pages/views discovered in the codebase.",
+      "items": {
+        "$ref": "#/definitions/Page"
+      }
+    },
+    "api_endpoints": {
+      "type": "array",
+      "description": "Backend API endpoints discovered in the codebase.",
+      "items": {
+        "$ref": "#/definitions/ApiEndpoint"
+      }
+    },
+    "auth": {
+      "$ref": "#/definitions/Auth"
+    },
+    "data_flows": {
+      "type": "array",
+      "description": "Data flow traces describing how data moves through the system.",
+      "items": {
+        "$ref": "#/definitions/DataFlow"
+      }
+    }
+  },
+  "definitions": {
+    "Page": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this page/view."
+        },
+        "routes": {
+          "type": "array",
+          "description": "URL route patterns that render this page.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "component": {
+          "type": "string",
+          "description": "Primary component name or file that implements this page."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Human-readable description of what this page does."
+        },
+        "elements": {
+          "$ref": "#/definitions/PageElements"
+        },
+        "design_tokens": {
+          "$ref": "#/definitions/DesignTokens"
+        },
+        "accessibility": {
+          "$ref": "#/definitions/Accessibility"
+        }
+      }
+    },
+    "PageElements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "forms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Form"
+          }
+        },
+        "navigation": {
+          "$ref": "#/definitions/Navigation"
+        }
+      }
+    },
+    "Form": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier or DOM id of the form."
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FormField"
+          }
+        },
+        "submit_button": {
+          "$ref": "#/definitions/SubmitButton"
+        },
+        "error_messages": {
+          "type": "object",
+          "description": "Map of error key to human-readable error message string.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "on_success": {
+          "$ref": "#/definitions/OnSuccess"
+        },
+        "api_call": {
+          "$ref": "#/definitions/ApiCall"
+        }
+      }
+    },
+    "FormField": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "description": "HTML input type or logical field type (e.g. text, email, password, select)."
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "label": {
+          "type": "string"
+        },
+        "validation": {
+          "type": "string",
+          "description": "Validation rule description (e.g. 'min 8 chars', 'email format')."
+        }
+      }
+    },
+    "SubmitButton": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Visible button label."
+        },
+        "type": {
+          "type": "string",
+          "description": "Button type attribute (e.g. submit, button)."
+        }
+      }
+    },
+    "OnSuccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "redirect": {
+          "type": "string",
+          "description": "URL or route to redirect to after successful submission."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status message or action taken on success."
+        }
+      }
+    },
+    "ApiCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API endpoint path called by this form."
+        }
+      }
+    },
+    "Navigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NavLink"
+          }
+        }
+      }
+    },
+    "NavLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        }
+      }
+    },
+    "DesignTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "primary_color": {
+          "type": "string"
+        },
+        "error_color": {
+          "type": "string"
+        },
+        "font_family": {
+          "type": "string"
+        },
+        "border_radius": {
+          "type": "string"
+        }
+      }
+    },
+    "Accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "form_labels": {
+          "type": "string",
+          "description": "How form labels are associated with inputs (e.g. htmlFor, aria-label)."
+        },
+        "aria_required": {
+          "type": "string",
+          "description": "How required fields are communicated (e.g. aria-required=true)."
+        },
+        "error_role": {
+          "type": "string",
+          "description": "ARIA role used for error messages (e.g. alert)."
+        },
+        "focus_management": {
+          "type": "string",
+          "description": "How focus is managed after form submission or navigation."
+        }
+      }
+    },
+    "ApiEndpoint": {
+      "type": "object",
+      "required": ["method", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+          "description": "HTTP method for this endpoint."
+        },
+        "path": {
+          "type": "string",
+          "description": "URL path pattern for this endpoint (e.g. /api/users/{id})."
+        },
+        "source_file": {
+          "type": "string",
+          "description": "Relative path to the source file defining this endpoint."
+        },
+        "auth_required": {
+          "type": "boolean",
+          "description": "Whether this endpoint requires authentication."
+        },
+        "middleware": {
+          "type": "array",
+          "description": "Middleware applied to this endpoint.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "request_body": {
+          "type": "object",
+          "description": "Map of field name to field definition for the request body.",
+          "additionalProperties": {
+            "$ref": "#/definitions/RequestBodyField"
+          }
+        },
+        "responses": {
+          "type": "object",
+          "description": "Map of HTTP status code string to response definition.",
+          "additionalProperties": {
+            "$ref": "#/definitions/ResponseDefinition"
+          }
+        }
+      }
+    },
+    "RequestBodyField": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "constraints": {
+          "type": "string",
+          "description": "Validation constraints description (e.g. 'min length 8', 'unique')."
+        }
+      }
+    },
+    "ResponseDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "body": {
+          "type": "string",
+          "description": "Description or shape of the response body."
+        },
+        "side_effects": {
+          "type": "string",
+          "description": "Side effects triggered by this response (e.g. session created, record deleted)."
+        },
+        "sets_auth": {
+          "type": "boolean",
+          "description": "Whether this response sets authentication state (e.g. sets a session cookie)."
+        },
+        "when": {
+          "type": "string",
+          "description": "Condition under which this response is returned."
+        }
+      }
+    },
+    "Auth": {
+      "type": "object",
+      "description": "Authentication/authorization configuration for the application.",
+      "additionalProperties": false,
+      "properties": {
+        "mechanism": {
+          "type": "string",
+          "description": "Authentication mechanism used (e.g. session-cookie, JWT, OAuth)."
+        },
+        "cookie_name": {
+          "type": "string",
+          "description": "Name of the authentication cookie (if cookie-based)."
+        },
+        "token_name": {
+          "type": "string",
+          "description": "Name of the authentication token header or field (if token-based)."
+        },
+        "cookie_attributes": {
+          "type": "object",
+          "description": "Attributes applied to the auth cookie.",
+          "additionalProperties": {
+            "type": ["string", "boolean"]
+          }
+        },
+        "session_store": {
+          "type": "string",
+          "description": "Where sessions are stored (e.g. database, redis, memory)."
+        },
+        "login_endpoint": {
+          "type": "string",
+          "description": "API endpoint path for login."
+        },
+        "register_endpoint": {
+          "type": "string",
+          "description": "API endpoint path for registration."
+        },
+        "logout_endpoint": {
+          "type": "string",
+          "description": "API endpoint path for logout."
+        },
+        "refresh_mechanism": {
+          "type": "string",
+          "description": "How authentication tokens or sessions are refreshed."
+        },
+        "protected_routes": {
+          "$ref": "#/definitions/ProtectedRoutes"
+        },
+        "redirect_on_unauth": {
+          "type": "string",
+          "description": "URL to redirect unauthenticated users to."
+        }
+      }
+    },
+    "ProtectedRoutes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "frontend": {
+          "type": "array",
+          "description": "Frontend routes that require authentication.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "backend": {
+          "type": "array",
+          "description": "Backend API paths that require authentication.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DataFlow": {
+      "type": "object",
+      "description": "Describes how data moves from a trigger through writes and reads.",
+      "additionalProperties": false,
+      "properties": {
+        "trigger": {
+          "type": "string",
+          "description": "The action or event that initiates this data flow."
+        },
+        "writes_to": {
+          "type": "string",
+          "description": "Data store or location that is written to."
+        },
+        "then_readable_from": {
+          "type": "array",
+          "description": "Endpoints or surfaces from which the written data can subsequently be read.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "verification": {
+          "type": "string",
+          "description": "How to verify this data flow worked correctly."
+        }
+      }
+    }
+  }
+}

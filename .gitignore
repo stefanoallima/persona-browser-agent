@@ -12,6 +12,7 @@ recordings/
 screenshots/
 *.json
 !config.yaml
+!schemas/*.json
 
 # PoC generated files
 poc/test_app/node_modules/

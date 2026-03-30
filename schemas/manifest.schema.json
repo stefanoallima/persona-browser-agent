@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://persona-browser-agent/schemas/manifest.schema.json",
+  "title": "Manifest",
+  "description": "Testing manifest that tells the persona-browser-agent what pages exist, what to test, and how to verify results.",
+  "type": "object",
+  "required": ["pages"],
+  "additionalProperties": false,
+  "properties": {
+    "pages": {
+      "type": "array",
+      "description": "Pages that the agent should visit and validate.",
+      "items": {
+        "$ref": "#/definitions/ManifestPage"
+      }
+    },
+    "auth_flow": {
+      "$ref": "#/definitions/AuthFlow"
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Free-form task instructions for the agent.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification_tasks": {
+      "type": "array",
+      "description": "Structured verification tasks to run after navigation.",
+      "items": {
+        "$ref": "#/definitions/VerificationTask"
+      }
+    }
+  },
+  "definitions": {
+    "ManifestPage": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this page, matching the codeintel page id where applicable."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Human-readable description of what this page is for."
+        },
+        "how_to_reach": {
+          "type": "string",
+          "description": "Instructions for navigating to this page (e.g. route, click path)."
+        },
+        "expected_features": {
+          "type": "array",
+          "description": "Features or UI elements that should be present on this page.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "auth_required": {
+          "type": "boolean",
+          "description": "Whether authentication is required to access this page."
+        },
+        "expected_data": {
+          "type": "array",
+          "description": "Data items or content that should appear on this page.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "AuthFlow": {
+      "type": "object",
+      "description": "Describes the authentication flow to test.",
+      "additionalProperties": false,
+      "properties": {
+        "pre_auth_pages": {
+          "type": "array",
+          "description": "Page ids accessible before authentication.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "auth_action": {
+          "type": "string",
+          "description": "The action to perform to authenticate (e.g. 'login with test credentials')."
+        },
+        "post_auth_pages": {
+          "type": "array",
+          "description": "Page ids accessible after authentication.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "verify_auth_persistence": {
+          "type": "boolean",
+          "description": "Whether to verify that auth state persists across page navigations."
+        },
+        "verify_logout": {
+          "type": "boolean",
+          "description": "Whether to verify that logout clears auth state."
+        },
+        "unauthenticated_behavior": {
+          "$ref": "#/definitions/UnauthenticatedBehavior"
+        }
+      }
+    },
+    "UnauthenticatedBehavior": {
+      "type": "object",
+      "description": "Expected behavior when an unauthenticated user accesses a protected resource.",
+      "additionalProperties": false,
+      "properties": {
+        "expected": {
+          "type": "string",
+          "description": "Human-readable description of what should happen (e.g. redirect to /login)."
+        },
+        "test": {
+          "type": "string",
+          "description": "Instructions for how to test this behavior."
+        }
+      }
+    },
+    "VerificationTask": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this verification task."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "data_persistence",
+            "cross_page_consistency",
+            "auth_persistence",
+            "auth_boundary"
+          ],
+          "description": "Category of verification being performed."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what is being verified."
+        },
+        "check": {
+          "type": "string",
+          "description": "Instructions or assertion to perform the verification."
+        },
+        "derived_from": {
+          "type": "string",
+          "description": "Reference to the codeintel data flow or endpoint this task was derived from."
+        }
+      }
+    }
+  }
+}
