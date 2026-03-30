@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-30
 **Updated**: 2026-03-30 — browser-use v0.12+ research findings
-**Status**: MUST COMPLETE BEFORE Phase 1
+**Status**: COMPLETED — Phase 1 cleared to proceed
 **Blocks**: All implementation phases
 **Related**: `architecture-proposal-v3.md`
 
@@ -32,14 +32,18 @@ This changes the feasibility landscape for both critical risks:
 
 **Net effect: both critical risks are significantly de-risked.** The PoCs are still worth running (1-2 hours each) for empirical confirmation, but the probability of "fundamental redesign needed" has dropped from moderate to very low.
 
+**Additional findings from PoC runs:**
+- OpenRouter model ID is `google/gemini-2.5-flash` (not `gemini-2.5-flash-preview` as in config.yaml)
+- `langchain_openai` may fail due to torch/c10.dll issues; `browser_use.llm.litellm.ChatLiteLLM` works as alternative
+
 ---
 
 ## Risk Summary
 
 | # | Risk | Severity | Type | Status (post-research) |
 |---|------|----------|------|------------------------|
-| 1 | Navigator cannot produce structured JSON — no post-processing step defined | Critical | Feasibility | **De-risked** — AgentHistoryList is rich/structured (Outcome A likely) |
-| 2 | Network capture is unvalidated — 40% of v3's value depends on it | Critical | Feasibility | **De-risked** — HAR recording built into BrowserProfile |
+| 1 | Navigator cannot produce structured JSON — no post-processing step defined | Critical | Feasibility | **CONFIRMED** — Outcome A validated (PoC-1, see poc/FINDINGS.md) |
+| 2 | Network capture is unvalidated — 40% of v3's value depends on it | Critical | Feasibility | **CONFIRMED** — HAR recording validated (PoC-2, see poc/FINDINGS.md). Note: httpOnly cookies need supplementary CDP call. |
 | 3 | Code-analyzer will produce wrong data on real codebases — no feedback loop | Important | Accuracy | Unchanged — address during Phase 5 |
 | 4 | No circuit breakers for overnight autonomous runs | Important | Operational | Unchanged — address during Phase 6 |
 | 5 | No meta-testing strategy — false PASSes are invisible | Important | Quality | Unchanged — address during Phase 3-4 |
@@ -109,6 +113,8 @@ A deterministic parser can:
 - Derive `manifest_coverage{}` by comparing visited URLs against manifest
 
 The remaining text descriptions (what the navigator saw on each page) will need to come from the LLM's natural language output, which the parser can extract from `model_thoughts()` or `extracted_content()` per step.
+
+> **Empirically confirmed (2026-03-30, PoC-1):** AgentHistoryList provides per-step URLs, screenshot paths (PNG files on disk), structured action dicts with full params, LLM reasoning/memory/goals via `AgentBrain`, DOM interacted elements, per-step timing, and extracted content. Page grouping by URL produces coherent per-page blocks. `final_result()` provides the experience narrative. All v3 schema fields (except `network_log`) are derivable via deterministic parser. See `poc/FINDINGS.md` for full results.
 
 ### Proof of Concept (PoC-1) — REVISED
 
@@ -208,6 +214,8 @@ pw_page.on('response', lambda res: log_response(res))
 | **C: HAR recording** | **Built-in, recommended** | Native `BrowserProfile.record_har_path` — zero custom code |
 | D: Playwright alongside via CDP | **Available as fallback** | Official example exists, connect to same Chrome |
 | E: Redesign without network | **Unlikely needed** | HAR recording is near-certain to work |
+
+> **Empirically confirmed (2026-03-30, PoC-2):** BrowserProfile HAR recording captures method, URL, status, timing, request bodies (POST JSON), and response bodies for all HTTP requests during a browser-use session. Known limitation: httpOnly cookies (Set-Cookie/Cookie headers) are not exposed by CDP Network events — Chrome security boundary. Workaround: supplement with `CDP Network.getAllCookies()` calls. Additional finding: HAR watchdog filters out HTTP (non-HTTPS) URLs — needs monkey-patch for localhost testing only. See `poc/FINDINGS.md` for full results.
 
 ### Proof of Concept (PoC-2) — REVISED
 
