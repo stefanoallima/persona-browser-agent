@@ -1,0 +1,56 @@
+# Persona Browser Agent Configuration
+# Default: Gemini Flash via OpenRouter (multimodal vision — ideal for browser navigation)
+
+llm:
+  # Provider: openrouter | zai | openai | custom
+  provider: openrouter
+  model: google/gemini-2.5-flash-preview
+  endpoint: "https://openrouter.ai/api/v1"
+  # Name of environment variable containing the API key
+  api_key_env: OPENROUTER_API_KEY
+  # Temperature for browser navigation decisions (lower = more deterministic)
+  temperature: 0.1
+  # Max tokens per LLM call
+  max_tokens: 50000
+
+# Why Gemini Flash: strong multimodal vision at low cost — understands screenshots,
+# UI layouts, and visual elements that text-only models miss. Essential for browser nav.
+
+# Alternative configs (uncomment to switch):
+#
+# Z.AI GLM-5.1 (free via coding plan — good for text-heavy UIs):
+# llm:
+#   provider: zai
+#   model: glm-5.1
+#   endpoint: "https://api.z.ai/api/coding/paas/v4"
+#   api_key_env: ZAI_API_KEY
+#   temperature: 0.1
+#   max_tokens: 50000
+#
+# OpenAI direct:
+# llm:
+#   provider: openai
+#   model: gpt-4o-mini
+#   endpoint: ""
+#   api_key_env: OPENAI_API_KEY
+#   temperature: 0.1
+#   max_tokens: 50000
+
+browser:
+  # Run headless (no visible browser window)
+  headless: true
+  # Browser window size
+  width: 1280
+  height: 720
+  # Max time (seconds) for the agent to complete all objectives
+  timeout: 300
+  # Record video of the session (requires browser-use[video])
+  record_video: false
+  record_video_dir: "./recordings"
+
+reporting:
+  # Save screenshots during navigation
+  screenshots: true
+  screenshots_dir: "./screenshots"
+  # Output format
+  format: json

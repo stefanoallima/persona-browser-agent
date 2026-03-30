@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "persona-browser-agent"
+version = "0.1.0"
+description = "AI-driven browser testing as simulated personas. Uses browser-use + configurable LLM (default: GLM-5.1 via Z.AI free coding plan)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "browser-use>=0.2.0",
+    "langchain-openai>=0.3.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+video = ["browser-use[video]"]
+anthropic = ["langchain-anthropic>=0.3.0"]
+
+[project.scripts]
+persona-test = "persona_browser.cli:main"
