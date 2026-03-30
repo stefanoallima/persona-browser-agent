@@ -12,3 +12,10 @@ recordings/
 screenshots/
 *.json
 !config.yaml
+
+# PoC generated files
+poc/test_app/node_modules/
+poc/poc1_output.json
+poc/session.har
+poc/screenshots/
+poc/recordings/
