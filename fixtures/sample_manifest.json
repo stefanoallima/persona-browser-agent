@@ -1,0 +1,70 @@
+{
+  "pages": [
+    {
+      "id": "registration",
+      "purpose": "New user registration form — the entry point for all new users",
+      "how_to_reach": "Navigate to /register (or / which redirects there). No authentication required.",
+      "auth_required": false,
+      "expected_features": [
+        "Registration form with Full Name, Email Address, and Password fields",
+        "Submit button labelled 'Register'",
+        "Inline error message area that appears on validation failure",
+        "Form title 'Create Account'"
+      ]
+    },
+    {
+      "id": "dashboard",
+      "purpose": "Authenticated user home screen showing personalised user info",
+      "how_to_reach": "Complete registration first; the form redirects to /dashboard on success. Alternatively navigate directly to /dashboard while holding a valid session cookie.",
+      "auth_required": true,
+      "expected_features": [
+        "Page heading 'Welcome!'",
+        "User info section displaying Name and Email",
+        "Logout button"
+      ],
+      "expected_data": [
+        "User's full name as entered during registration",
+        "User's email address as entered during registration"
+      ]
+    }
+  ],
+  "auth_flow": {
+    "pre_auth_pages": ["registration"],
+    "auth_action": "Fill in the registration form with a unique name, email, and password (min 8 chars), then submit. The app sets a 'session' httpOnly cookie and redirects to /dashboard.",
+    "post_auth_pages": ["dashboard"],
+    "verify_auth_persistence": true,
+    "verify_logout": false,
+    "unauthenticated_behavior": {
+      "expected": "Accessing /dashboard without a valid session cookie redirects the user to /register",
+      "test": "Open a fresh browser context (no cookies), navigate directly to /dashboard, and verify the browser lands on /register"
+    }
+  },
+  "tasks": [
+    "Navigate to /register and verify the registration form is present with three fields: Full Name, Email Address, Password",
+    "Submit the form with valid credentials (unique email, password >= 8 chars) and verify redirect to /dashboard",
+    "On the dashboard, verify the user's name and email are displayed"
+  ],
+  "verification_tasks": [
+    {
+      "id": "V1",
+      "type": "data_persistence",
+      "description": "User data persists after a page reload on the dashboard",
+      "check": "After successful registration and landing on /dashboard, reload the page and confirm the user's name and email are still displayed (not blank and not 'Loading user data...')",
+      "derived_from": "data_flows[0]: register writes to users store, GET /api/user/me reads it back"
+    },
+    {
+      "id": "V3",
+      "type": "auth_persistence",
+      "description": "Session cookie persists across navigation so the user stays authenticated",
+      "check": "After completing registration, navigate away to /register and then back to /dashboard without clearing cookies. Verify /dashboard renders user data rather than redirecting.",
+      "derived_from": "auth.cookie_name=session, auth.cookie_attributes.maxAge=86400000"
+    },
+    {
+      "id": "V4",
+      "type": "auth_boundary",
+      "description": "Unauthenticated access to /dashboard is rejected with a redirect to /register",
+      "check": "In a fresh browser context with no cookies, navigate directly to /dashboard and verify the final URL is /register (or /)",
+      "derived_from": "auth.protected_routes.frontend=['/dashboard'], auth.redirect_on_unauth='/register'"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ screenshots/
 *.json
 !config.yaml
 !schemas/*.json
+!fixtures/*.json
 
 # PoC generated files
 poc/test_app/node_modules/

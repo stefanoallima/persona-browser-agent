@@ -1,0 +1,175 @@
+{
+  "version": "1.0",
+  "generated_from": "git:poc-test-app",
+  "generated_at": "2026-03-30T12:00:00Z",
+  "pages": [
+    {
+      "id": "registration",
+      "routes": ["/register", "/"],
+      "component": "server.js:GET /register",
+      "purpose": "New user signup form. Unauthenticated users land here. Submits to POST /api/auth/register and redirects to /dashboard on success.",
+      "elements": {
+        "forms": [
+          {
+            "id": "registerForm",
+            "fields": [
+              {
+                "name": "name",
+                "type": "text",
+                "required": true,
+                "label": "Full Name",
+                "validation": "non-empty (HTML required attribute)"
+              },
+              {
+                "name": "email",
+                "type": "email",
+                "required": true,
+                "label": "Email Address",
+                "validation": "non-empty, email format (HTML email input type)"
+              },
+              {
+                "name": "password",
+                "type": "password",
+                "required": true,
+                "label": "Password",
+                "validation": "non-empty, minlength=8 (HTML minlength attribute + server-side check)"
+              }
+            ],
+            "submit_button": {
+              "text": "Register",
+              "type": "submit"
+            },
+            "error_messages": {
+              "missing_fields": "Missing required fields: name, email, password",
+              "password_too_short": "Password must be at least 8 characters long",
+              "email_taken": "Email already registered",
+              "network_error": "Registration failed"
+            },
+            "on_success": {
+              "redirect": "/dashboard"
+            },
+            "api_call": {
+              "method": "POST",
+              "endpoint": "/api/auth/register"
+            }
+          }
+        ]
+      },
+      "design_tokens": {
+        "primary_color": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "error_color": "#e74c3c",
+        "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        "border_radius": "8px"
+      }
+    },
+    {
+      "id": "dashboard",
+      "routes": ["/dashboard"],
+      "component": "server.js:GET /dashboard",
+      "purpose": "Authenticated user home screen. Displays user name and email fetched from GET /api/user/me. Redirects unauthenticated visitors to /register.",
+      "elements": {
+        "navigation": {
+          "links": [
+            {
+              "text": "Logout",
+              "href": "/register"
+            }
+          ]
+        }
+      },
+      "design_tokens": {
+        "primary_color": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "error_color": "#e74c3c",
+        "font_family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        "border_radius": "8px"
+      }
+    }
+  ],
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "source_file": "poc/test_app/server.js",
+      "auth_required": false,
+      "middleware": ["express.json", "cookieParser"],
+      "request_body": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "constraints": "non-empty"
+        },
+        "email": {
+          "type": "string",
+          "required": true,
+          "constraints": "non-empty, used as unique key in users store"
+        },
+        "password": {
+          "type": "string",
+          "required": true,
+          "constraints": "min length 8"
+        }
+      },
+      "responses": {
+        "201": {
+          "body": "{ user_id: string }",
+          "side_effects": "User record written to in-memory users store; session created in sessions store",
+          "sets_auth": true,
+          "when": "All fields valid, email not already registered"
+        },
+        "400": {
+          "body": "{ message: string }",
+          "when": "Missing required fields (name, email, or password) OR password shorter than 8 characters"
+        },
+        "409": {
+          "body": "{ message: 'Email already registered' }",
+          "when": "Provided email already exists in users store"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/me",
+      "source_file": "poc/test_app/server.js",
+      "auth_required": true,
+      "middleware": ["cookieParser"],
+      "responses": {
+        "200": {
+          "body": "{ name: string, email: string }",
+          "when": "Valid session cookie present"
+        },
+        "401": {
+          "body": "{ message: 'Not authenticated' }",
+          "when": "No session cookie, or session ID not found in sessions store"
+        }
+      }
+    }
+  ],
+  "auth": {
+    "mechanism": "session-cookie",
+    "cookie_name": "session",
+    "cookie_attributes": {
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "strict",
+      "maxAge": "86400000"
+    },
+    "session_store": "in-memory (server.js sessions object)",
+    "register_endpoint": "/api/auth/register",
+    "protected_routes": {
+      "frontend": ["/dashboard"],
+      "backend": ["/api/user/me"]
+    },
+    "redirect_on_unauth": "/register"
+  },
+  "data_flows": [
+    {
+      "trigger": "User submits registration form with valid name, email, password",
+      "writes_to": "in-memory users store (keyed by email) and sessions store (keyed by sessionId)",
+      "then_readable_from": [
+        "GET /api/user/me — returns { name, email } when session cookie is valid",
+        "GET /dashboard — server reads session to decide whether to render dashboard or redirect"
+      ],
+      "verification": "After successful POST /api/auth/register (201), GET /api/user/me should return the same name and email that were submitted"
+    }
+  ]
+}
