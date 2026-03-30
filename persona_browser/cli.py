@@ -18,6 +18,12 @@ def main():
             '--objectives "find signup, fill form, submit"\n'
             "  persona-test --persona micro-persona.md --url http://localhost:5173 "
             '--objectives "search for product, add to cart" --scope gate\n'
+            "  persona-test --persona persona.md --url http://localhost:3000 "
+            '--objectives "login, browse dashboard" --manifest manifest.json '
+            "--max-steps 30 --timeout 90\n"
+            "  persona-test --persona persona.md --url http://localhost:3000 "
+            '--objectives "checkout flow" --app-domains "localhost:3000,api.myapp.com" '
+            "--no-capture-network\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -63,10 +69,89 @@ def main():
         help="Directory for video recordings (overrides config)",
     )
 
+    # --- New flags (Phase 2) ---
+    parser.add_argument(
+        "--manifest", default="",
+        help=(
+            "Path to manifest.json file (used by navigator for page navigation, "
+            "auth flow, and verification tasks)"
+        ),
+    )
+    parser.add_argument(
+        "--capture-network",
+        dest="capture_network",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Enable or disable HAR recording (default: from config, currently enabled). "
+            "Use --no-capture-network to disable."
+        ),
+    )
+    parser.add_argument(
+        "--max-steps",
+        type=int,
+        default=None,
+        help="Max browser-use agent steps before stopping (default: from config, 50)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        help="Max seconds for navigator session (default: from config, 120)",
+    )
+    parser.add_argument(
+        "--app-domains",
+        type=str,
+        default="",
+        help=(
+            "Comma-separated list of domains to include in HAR filtering "
+            "(default: all domains). Example: localhost:3000,api.myapp.com"
+        ),
+    )
+    parser.add_argument(
+        "--codeintel",
+        default="",
+        help=(
+            "Path to codeintel.json — stored for Phase 3 scoring "
+            "(not used by navigator yet)"
+        ),
+    )
+    parser.add_argument(
+        "--rubric",
+        default="",
+        help=(
+            "Path to rubric.md — stored for Phase 3 scoring "
+            "(not used by navigator yet)"
+        ),
+    )
+
     args = parser.parse_args()
 
     # Load config
     config = load_config(args.config or None)
+
+    # Override config with explicit CLI args
+    if args.capture_network is not None:
+        config.browser.capture_network = args.capture_network
+    if args.max_steps is not None:
+        config.browser.max_steps = args.max_steps
+    if args.timeout is not None:
+        config.browser.timeout_seconds = args.timeout
+
+    # Parse app_domains from comma-separated string to list
+    domains = args.app_domains.split(",") if args.app_domains else []
+
+    # Note for Phase 3 flags (stored but not yet active)
+    if args.codeintel:
+        print(
+            "Note: --codeintel stored for Phase 3 (not used by navigator)",
+            file=sys.stderr,
+        )
+    if args.rubric:
+        print(
+            "Note: --rubric stored for Phase 3 (not used by navigator)",
+            file=sys.stderr,
+        )
 
     # Load form data if provided
     form_data = ""
@@ -84,6 +169,8 @@ def main():
         form_data=form_data,
         screenshots_dir=args.screenshots_dir,
         record_video_dir=args.record_video,
+        manifest_path=args.manifest,
+        app_domains=domains,
     )
 
     # Output
