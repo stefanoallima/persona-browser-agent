@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -21,9 +21,16 @@ class BrowserConfig(BaseModel):
     headless: bool = True
     width: int = 1280
     height: int = 720
+    # Legacy field — kept for backward compatibility.
+    # Use timeout_seconds instead; timeout_seconds takes precedence when set.
     timeout: int = 300
     record_video: bool = False
     record_video_dir: str = "./recordings"
+    # Navigator control fields (v2+)
+    max_steps: int = 50             # Max browser-use agent steps before stopping
+    timeout_seconds: int = 120      # Max seconds for navigator session (preferred over timeout)
+    app_domains: List[str] = Field(default_factory=list)  # Domains for HAR filtering (empty = all)
+    capture_network: bool = True    # Enable HAR recording
 
 
 class ReportingConfig(BaseModel):
