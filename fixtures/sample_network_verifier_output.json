@@ -1,0 +1,40 @@
+{
+  "api_calls_total": 3,
+  "api_calls_matched_codeintel": 3,
+  "api_calls_unmatched": 0,
+  "api_errors_during_normal_flow": 0,
+  "auth_token_set_after_auth": true,
+  "auth_token_sent_on_protected_requests": true,
+  "auth_persists_after_refresh": true,
+  "deal_breakers": [],
+  "issues": [],
+  "per_endpoint": [
+    {
+      "method": "POST",
+      "path": "/api/auth/register",
+      "matched_codeintel": true,
+      "status": 201,
+      "expected_status": 201,
+      "contract_match": true,
+      "auth_check": "N/A (public endpoint — sets auth)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/me",
+      "matched_codeintel": true,
+      "status": 200,
+      "expected_status": 200,
+      "contract_match": true,
+      "auth_check": "PASS — session cookie sent and accepted; response body contains name and email"
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/me",
+      "matched_codeintel": true,
+      "status": 200,
+      "expected_status": 200,
+      "contract_match": true,
+      "auth_check": "PASS — session cookie still valid after page refresh; response body unchanged"
+    }
+  ]
+}
