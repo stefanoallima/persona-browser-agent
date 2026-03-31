@@ -111,18 +111,12 @@ def main():
     parser.add_argument(
         "--codeintel",
         default="",
-        help=(
-            "Path to codeintel.json — stored for Phase 3 scoring "
-            "(not used by navigator yet)"
-        ),
+        help="Path to codeintel.json for scoring pipeline (enables full pipeline mode)",
     )
     parser.add_argument(
         "--rubric",
         default="",
-        help=(
-            "Path to rubric.md — stored for Phase 3 scoring "
-            "(not used by navigator yet)"
-        ),
+        help="Path to consumer rubric.md for scoring pipeline (enables full pipeline mode)",
     )
 
     args = parser.parse_args()
@@ -141,37 +135,46 @@ def main():
     # Parse app_domains from comma-separated string to list
     domains = args.app_domains.split(",") if args.app_domains else []
 
-    # Note for Phase 3 flags (stored but not yet active)
-    if args.codeintel:
-        print(
-            "Note: --codeintel stored for Phase 3 (not used by navigator)",
-            file=sys.stderr,
-        )
-    if args.rubric:
-        print(
-            "Note: --rubric stored for Phase 3 (not used by navigator)",
-            file=sys.stderr,
-        )
-
     # Load form data if provided
     form_data = ""
     if args.form_data and Path(args.form_data).exists():
         form_data = Path(args.form_data).read_text(encoding="utf-8")
 
-    # Run test
-    report = run_sync(
-        persona_path=args.persona,
-        url=args.url,
-        objectives=args.objectives,
-        config=config,
-        scope=args.scope,
-        task_id=args.task_id,
-        form_data=form_data,
-        screenshots_dir=args.screenshots_dir,
-        record_video_dir=args.record_video,
-        manifest_path=args.manifest,
-        app_domains=domains,
-    )
+    # Run test — full pipeline or navigator-only
+    if args.codeintel and args.rubric:
+        # Full pipeline: navigator → scorers → reconciler
+        from .pipeline import run_pipeline_sync
+
+        report = run_pipeline_sync(
+            persona_path=args.persona,
+            url=args.url,
+            objectives=args.objectives,
+            config=config,
+            codeintel_path=args.codeintel,
+            rubric_path=args.rubric,
+            scope=args.scope,
+            task_id=args.task_id,
+            form_data=form_data,
+            manifest_path=args.manifest,
+            screenshots_dir=args.screenshots_dir,
+            record_video_dir=args.record_video,
+            app_domains=domains,
+        )
+    else:
+        # Navigator only (backward compat)
+        report = run_sync(
+            persona_path=args.persona,
+            url=args.url,
+            objectives=args.objectives,
+            config=config,
+            scope=args.scope,
+            task_id=args.task_id,
+            form_data=form_data,
+            screenshots_dir=args.screenshots_dir,
+            record_video_dir=args.record_video,
+            manifest_path=args.manifest,
+            app_domains=domains,
+        )
 
     # Output
     report_json = json.dumps(report, indent=2, ensure_ascii=False)
