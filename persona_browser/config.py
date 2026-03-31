@@ -17,6 +17,34 @@ class LLMConfig(BaseModel):
     max_tokens: int = 20000
 
 
+
+
+class ScoringLLMConfig(BaseModel):
+    provider: str = "openrouter"
+    model: str = ""
+    endpoint: str = "https://openrouter.ai/api/v1"
+    api_key_env: str = "OPENROUTER_API_KEY"
+    temperature: float = 0.1
+    max_tokens: int = 20000
+
+
+class ScoringConfig(BaseModel):
+    text_scorer: ScoringLLMConfig = Field(
+        default_factory=lambda: ScoringLLMConfig(
+            model="zhipuai/glm-5-turbo",
+        )
+    )
+    visual_scorer: ScoringLLMConfig = Field(
+        default_factory=lambda: ScoringLLMConfig(
+            model="google/gemini-3-flash",
+        )
+    )
+    reconciler: ScoringLLMConfig = Field(
+        default_factory=lambda: ScoringLLMConfig(
+            model="anthropic/claude-sonnet-4-6",
+        )
+    )
+
 class BrowserConfig(BaseModel):
     headless: bool = True
     width: int = 1280
@@ -41,6 +69,7 @@ class ReportingConfig(BaseModel):
 
 class Config(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
+    scoring: ScoringConfig = Field(default_factory=ScoringConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)
     reporting: ReportingConfig = Field(default_factory=ReportingConfig)
 

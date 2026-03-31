@@ -166,3 +166,61 @@ def test_classify_error_timeout():
     # Pure timeout error should NOT be classified as max_steps_reached
     result = _classify_error("session timeout")
     assert result != "max_steps_reached"
+
+
+# ---------------------------------------------------------------------------
+# 10. Config has scoring section with text_scorer, visual_scorer, reconciler
+# ---------------------------------------------------------------------------
+
+def test_config_has_scoring_section():
+    """Config should have a scoring section with text_scorer, visual_scorer, reconciler."""
+    from persona_browser.config import Config, ScoringConfig, ScoringLLMConfig
+
+    config = Config()
+    assert hasattr(config, "scoring")
+    assert isinstance(config.scoring, ScoringConfig)
+    assert isinstance(config.scoring.text_scorer, ScoringLLMConfig)
+    assert isinstance(config.scoring.visual_scorer, ScoringLLMConfig)
+    assert isinstance(config.scoring.reconciler, ScoringLLMConfig)
+
+    # Check defaults
+    assert "glm" in config.scoring.text_scorer.model.lower() or "glm-5" in config.scoring.text_scorer.model
+    assert "gemini" in config.scoring.visual_scorer.model.lower()
+    assert "sonnet" in config.scoring.reconciler.model.lower() or "claude" in config.scoring.reconciler.model.lower()
+
+
+# ---------------------------------------------------------------------------
+# 11. ScoringConfig loadable from a YAML dict
+# ---------------------------------------------------------------------------
+
+def test_scoring_config_from_yaml():
+    """ScoringConfig should be loadable from a YAML dict."""
+    from persona_browser.config import Config
+
+    data = {
+        "scoring": {
+            "text_scorer": {"model": "custom/text-model", "api_key_env": "CUSTOM_KEY"},
+            "visual_scorer": {"model": "custom/visual-model"},
+            "reconciler": {"model": "custom/reconciler-model", "temperature": 0.3},
+        }
+    }
+    config = Config(**data)
+    assert config.scoring.text_scorer.model == "custom/text-model"
+    assert config.scoring.text_scorer.api_key_env == "CUSTOM_KEY"
+    assert config.scoring.visual_scorer.model == "custom/visual-model"
+    assert config.scoring.reconciler.model == "custom/reconciler-model"
+    assert config.scoring.reconciler.temperature == 0.3
+
+
+# ---------------------------------------------------------------------------
+# 12. Config without scoring section uses defaults (backward compat)
+# ---------------------------------------------------------------------------
+
+def test_config_without_scoring_uses_defaults():
+    """Config without scoring section should use defaults (backward compat)."""
+    from persona_browser.config import Config
+
+    config = Config(**{"llm": {"model": "some/navigator-model"}})
+    assert config.scoring.text_scorer.model != ""
+    assert config.scoring.visual_scorer.model != ""
+    assert config.scoring.reconciler.model != ""
