@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -269,5 +272,349 @@ def _assemble_final_report(
         report["screenshots"] = navigator_output["screenshots"]
     if navigator_output.get("video"):
         report["video"] = navigator_output["video"]
+
+    return report
+
+
+# ---------------------------------------------------------------------------
+# Phase 2: LLM-Based Per-Page Score Reconciliation
+# ---------------------------------------------------------------------------
+
+
+def _build_reconciliation_prompt(
+    page_id: str,
+    text_page: dict | None,
+    visual_page: dict | None,
+    network_verification: dict,
+    rubric_text: str,
+    pb_rubric_text: str,
+    availability: str,
+) -> str:
+    """Build the LLM prompt for reconciling scores on one page."""
+
+    if availability == "both":
+        mode_instructions = (
+            "You have BOTH text-scorer and visual-scorer results for this page.\n"
+            "When the two scorers agree, keep their shared result with confidence: high.\n"
+            "When they disagree, apply these rules:\n"
+            "  - For spatial/visual criteria (layout, positioning, colours, contrast): trust the visual scorer.\n"
+            "  - For behavioural criteria (redirects, form submissions, data flow): trust the text scorer.\n"
+            "  - If a deal-breaker criterion has any FAIL, set reconciled to FAIL and flag it.\n"
+            "  - Set confidence to medium when you override one scorer.\n"
+            "  - When one scorer says PASS/FAIL and the other says UNKNOWN, trust the one with a definitive result (confidence: medium).\n"
+            "  - When both say UNKNOWN, keep UNKNOWN with confidence: low.\n"
+        )
+    elif availability == "text_only":
+        mode_instructions = (
+            "You have ONLY text-scorer results (no visual scorer) for this page.\n"
+            "Trust the text scorer results. Set confidence to medium for text-based criteria,\n"
+            "and low for criteria that really need visual confirmation.\n"
+        )
+    elif availability == "visual_only":
+        mode_instructions = (
+            "You have ONLY visual-scorer results (no text scorer) for this page.\n"
+            "Trust the visual scorer results. Set confidence to medium for visual-based criteria,\n"
+            "and low for criteria that really need behavioural/text confirmation.\n"
+        )
+    else:
+        mode_instructions = "No scorer results available. Return UNKNOWN for all criteria.\n"
+
+    text_json = json.dumps(text_page, indent=2) if text_page else "null"
+    visual_json = json.dumps(visual_page, indent=2) if visual_page else "null"
+
+    net_issues = network_verification.get("issues", [])
+    net_deal_breakers = network_verification.get("deal_breakers", [])
+    network_context = (
+        f"Network issues: {json.dumps(net_issues)}\n"
+        f"Network deal-breakers: {json.dumps(net_deal_breakers)}"
+    )
+
+    prompt = f"""You are a QA score reconciler. Reconcile the scoring results for page "{page_id}".
+
+## Mode
+{mode_instructions}
+
+## Reconciliation Rules Summary
+| Text     | Visual   | Reconciled              | Confidence |
+|----------|----------|-------------------------|------------|
+| PASS     | PASS     | PASS                    | high       |
+| FAIL     | FAIL     | FAIL                    | high       |
+| PASS     | FAIL     | LLM decides (spatial->visual, behavioural->text) | medium |
+| FAIL     | PASS     | LLM decides (spatial->visual, behavioural->text) | medium |
+| scored   | UNKNOWN  | Trust scored one        | medium     |
+| UNKNOWN  | scored   | Trust scored one        | medium     |
+| UNKNOWN  | UNKNOWN  | UNKNOWN                 | low        |
+| one-scorer-only | - | Trust that scorer       | medium     |
+| Disagree on deal-breaker | - | FAIL + flag    | low        |
+
+## Text Scorer Results
+{text_json}
+
+## Visual Scorer Results
+{visual_json}
+
+## Network Verification Context
+{network_context}
+
+## Consumer Rubric
+{rubric_text}
+
+## PB Feature Rubric
+{pb_rubric_text}
+
+## Output Format
+
+Return a single JSON object with exactly three top-level keys:
+- `pb_criteria`: array of objects, each with: feature, criterion, reconciled (PASS/FAIL/UNKNOWN), confidence (high/medium/low), evidence, discrepancy (string or null)
+- `consumer_criteria`: array of objects, each with: criterion, reconciled (PASS/FAIL/UNKNOWN), confidence (high/medium/low), evidence, discrepancy (string or null)
+- `deal_breakers`: array of strings listing any triggered deal-breakers (empty array if none)
+
+Include ALL criteria from both scorers (deduplicated by criterion text).
+For each criterion, set `discrepancy` to a short explanation if the two scorers disagreed, otherwise null.
+
+Output ONLY the JSON object. No preamble, no explanation outside the JSON.
+"""
+    return prompt
+
+
+def _parse_reconciliation_response(raw_text: str) -> dict | None:
+    """
+    Parse the LLM JSON response for reconciliation.
+
+    Attempts:
+    1. Direct json.loads()
+    2. Extract from markdown code block
+    Returns None on failure.
+    """
+    stripped = raw_text.strip()
+
+    # Attempt 1: direct JSON parse
+    try:
+        return json.loads(stripped)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # Attempt 2: extract from markdown code block
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)```", stripped)
+    if match:
+        candidate = match.group(1).strip()
+        try:
+            return json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return None
+
+
+def _fallback_page(
+    page_id: str,
+    text_page: dict | None,
+    visual_page: dict | None,
+) -> dict:
+    """Fallback when LLM is unavailable or parse fails.
+
+    Collects criteria from whichever scorer output is available,
+    sets all results to UNKNOWN with confidence: low, and deduplicates
+    by criterion key.
+    """
+    seen_criteria: set[str] = set()
+    pb_criteria: list[dict] = []
+    consumer_criteria: list[dict] = []
+
+    sources = []
+    if text_page:
+        sources.append(text_page)
+    if visual_page:
+        sources.append(visual_page)
+
+    for source in sources:
+        for c in source.get("pb_criteria", []):
+            key = c.get("criterion", "")
+            if key not in seen_criteria:
+                seen_criteria.add(key)
+                pb_criteria.append({
+                    "feature": c.get("feature", "unknown"),
+                    "criterion": key,
+                    "reconciled": "UNKNOWN",
+                    "confidence": "low",
+                    "evidence": c.get("evidence", "Fallback -- LLM reconciliation unavailable"),
+                    "discrepancy": None,
+                })
+
+        for c in source.get("consumer_criteria", []):
+            key = c.get("criterion", "")
+            if key not in seen_criteria:
+                seen_criteria.add(key)
+                consumer_criteria.append({
+                    "criterion": key,
+                    "reconciled": "UNKNOWN",
+                    "confidence": "low",
+                    "evidence": c.get("evidence", "Fallback -- LLM reconciliation unavailable"),
+                    "discrepancy": None,
+                })
+
+    return {
+        "page_id": page_id,
+        "pb_criteria": pb_criteria,
+        "consumer_criteria": consumer_criteria,
+        "deal_breakers": [],
+    }
+
+
+async def _reconcile_page(
+    page_id: str,
+    text_page: dict | None,
+    visual_page: dict | None,
+    network_verification: dict,
+    rubric_text: str,
+    pb_rubric_text: str,
+    availability: str,
+    llm=None,
+) -> dict:
+    """Reconcile scores for one page via LLM.
+
+    Falls back to _fallback_page() when LLM is unavailable,
+    availability is 'neither', or LLM response cannot be parsed.
+    """
+    if availability == "neither" or llm is None:
+        return _fallback_page(page_id, text_page, visual_page)
+
+    prompt = _build_reconciliation_prompt(
+        page_id=page_id,
+        text_page=text_page,
+        visual_page=visual_page,
+        network_verification=network_verification,
+        rubric_text=rubric_text,
+        pb_rubric_text=pb_rubric_text,
+        availability=availability,
+    )
+
+    try:
+        response = await llm.ainvoke(prompt)
+        raw_text: str = response.content if hasattr(response, "content") else str(response)
+    except Exception:
+        logger.exception("LLM call failed for page %s, using fallback", page_id)
+        return _fallback_page(page_id, text_page, visual_page)
+
+    parsed = _parse_reconciliation_response(raw_text)
+    if parsed is None:
+        logger.warning("Failed to parse LLM response for page %s, using fallback", page_id)
+        return _fallback_page(page_id, text_page, visual_page)
+
+    return {
+        "page_id": page_id,
+        "pb_criteria": parsed.get("pb_criteria", []),
+        "consumer_criteria": parsed.get("consumer_criteria", []),
+        "deal_breakers": parsed.get("deal_breakers", []),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+async def reconcile_scores(
+    text_scores: list[dict] | dict,
+    visual_scores: list[dict] | dict,
+    network_verification: dict,
+    navigator_output: dict,
+    manifest: dict | None,
+    rubric_text: str,
+    pb_rubric_text: str,
+    llm=None,
+) -> dict:
+    """Reconcile text, visual, and network scores into a final report.
+
+    Orchestrates Phase 1 (deterministic pre-processing), Phase 2
+    (LLM per-page reconciliation), and Phase 3 (assemble final report).
+    """
+    import time
+
+    start = time.time()
+
+    # --- Phase 1: Deterministic pre-processing ---
+    manifest_coverage = _check_manifest_coverage(navigator_output, manifest)
+    verification_tasks = _evaluate_verification_tasks(navigator_output, manifest)
+    availability = _classify_scorer_availability(text_scores, visual_scores)
+
+    # Build page lookups from scorer outputs
+    text_by_page: dict[str, dict] = {}
+    visual_by_page: dict[str, dict] = {}
+
+    if isinstance(text_scores, list):
+        for page in text_scores:
+            pid = page.get("page_id", "")
+            if pid:
+                text_by_page[pid] = page
+
+    if isinstance(visual_scores, list):
+        for page in visual_scores:
+            pid = page.get("page_id", "")
+            if pid:
+                visual_by_page[pid] = page
+
+    # Collect all unique page IDs from both scorers
+    all_page_ids: list[str] = []
+    seen_ids: set[str] = set()
+    for pid in list(text_by_page.keys()) + list(visual_by_page.keys()):
+        if pid not in seen_ids:
+            all_page_ids.append(pid)
+            seen_ids.add(pid)
+
+    # --- Phase 2: LLM per-page reconciliation (parallel) ---
+    tasks = []
+    for pid in all_page_ids:
+        tasks.append(
+            _reconcile_page(
+                page_id=pid,
+                text_page=text_by_page.get(pid),
+                visual_page=visual_by_page.get(pid),
+                network_verification=network_verification,
+                rubric_text=rubric_text,
+                pb_rubric_text=pb_rubric_text,
+                availability=availability,
+                llm=llm,
+            )
+        )
+
+    reconciled_pages_raw = await asyncio.gather(*tasks)
+
+    # Merge navigator observations and features_detected into reconciled pages,
+    # and rename page_id to id for final schema
+    nav_pages_by_id: dict[str, dict] = {}
+    for nav_page in navigator_output.get("pages", []):
+        nav_pages_by_id[nav_page.get("id", "")] = nav_page
+
+    reconciled_pages: list[dict] = []
+    for rp in reconciled_pages_raw:
+        pid = rp.pop("page_id", "unknown")
+        rp["id"] = pid
+
+        # Merge navigator observations
+        nav_page = nav_pages_by_id.get(pid, {})
+        if nav_page.get("observations"):
+            rp["observations"] = nav_page["observations"]
+        if nav_page.get("url_visited"):
+            rp["url_visited"] = nav_page["url_visited"]
+
+        # Merge features_detected from visual scorer
+        visual_page = visual_by_page.get(pid)
+        if visual_page and visual_page.get("features_detected"):
+            rp["features_detected"] = visual_page["features_detected"]
+
+        reconciled_pages.append(rp)
+
+    # --- Phase 3: Assemble final report ---
+    elapsed = time.time() - start
+
+    report = _assemble_final_report(
+        navigator_output=navigator_output,
+        reconciled_pages=reconciled_pages,
+        network_verification=network_verification,
+        manifest_coverage=manifest_coverage,
+        verification_tasks=verification_tasks,
+        elapsed_seconds=elapsed,
+    )
 
     return report

@@ -368,3 +368,131 @@ class TestAssembleFinalReport:
         assert result_with["agent_result"] == "Test narrative"
         assert result_with["experience"] == {"satisfaction": 8}
         assert result_with["screenshots"] == ["ss1.png"]
+
+
+SCORER_RESULTS = json.loads((FIXTURES / "sample_scorer_results.json").read_text())
+
+
+from unittest.mock import AsyncMock, MagicMock
+
+
+class TestReconcilePage:
+    @pytest.mark.asyncio
+    async def test_both_agree(self):
+        """Mock LLM returns reconciled page. Verify page_id and criteria structure."""
+        from persona_browser.score_reconciler import _reconcile_page
+
+        text_page = SCORER_RESULTS["text_scores"][0]
+        visual_page = SCORER_RESULTS["visual_scores"][0]
+
+        # Mock LLM response
+        llm_response_json = '{"pb_criteria": [{"feature": "forms", "criterion": "Every field has a visible label", "reconciled": "PASS", "confidence": "high", "evidence": "Both scorers agree", "discrepancy": null}], "consumer_criteria": [{"criterion": "Registration form has Full Name, Email Address, and Password fields", "reconciled": "PASS", "confidence": "high", "evidence": "Both scorers agree", "discrepancy": null}], "deal_breakers": []}'
+
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = MagicMock(content=llm_response_json)
+
+        result = await _reconcile_page(
+            page_id="registration",
+            text_page=text_page,
+            visual_page=visual_page,
+            network_verification=NETWORK_VERIFICATION,
+            rubric_text="test rubric",
+            pb_rubric_text="test pb rubric",
+            availability="both",
+            llm=mock_llm,
+        )
+
+        assert result["page_id"] == "registration"
+        assert len(result["pb_criteria"]) >= 1
+        assert result["pb_criteria"][0]["reconciled"] == "PASS"
+        assert result["pb_criteria"][0]["confidence"] == "high"
+        mock_llm.ainvoke.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_text_only_mode(self):
+        """When visual_page is None, LLM gets text_only prompt. Confidence should be low."""
+        from persona_browser.score_reconciler import _reconcile_page
+
+        text_page = SCORER_RESULTS["text_scores"][0]
+
+        llm_response_json = '{"pb_criteria": [{"feature": "forms", "criterion": "Every field has a visible label", "reconciled": "PASS", "confidence": "low", "evidence": "Text scorer only", "discrepancy": null}], "consumer_criteria": [], "deal_breakers": []}'
+
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = MagicMock(content=llm_response_json)
+
+        result = await _reconcile_page(
+            page_id="registration",
+            text_page=text_page,
+            visual_page=None,
+            network_verification=NETWORK_VERIFICATION,
+            rubric_text="test rubric",
+            pb_rubric_text="test pb rubric",
+            availability="text_only",
+            llm=mock_llm,
+        )
+
+        assert result["page_id"] == "registration"
+        assert result["pb_criteria"][0]["confidence"] == "low"
+        mock_llm.ainvoke.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_llm_parse_failure_returns_unknown(self):
+        """When LLM returns invalid JSON, fallback to UNKNOWN for all criteria."""
+        from persona_browser.score_reconciler import _reconcile_page
+
+        text_page = SCORER_RESULTS["text_scores"][0]
+        visual_page = SCORER_RESULTS["visual_scores"][0]
+
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = MagicMock(content="This is not valid JSON")
+
+        result = await _reconcile_page(
+            page_id="registration",
+            text_page=text_page,
+            visual_page=visual_page,
+            network_verification=NETWORK_VERIFICATION,
+            rubric_text="test rubric",
+            pb_rubric_text="test pb rubric",
+            availability="both",
+            llm=mock_llm,
+        )
+
+        assert result["page_id"] == "registration"
+        # All criteria should be UNKNOWN (fallback)
+        for c in result["pb_criteria"]:
+            assert c["reconciled"] == "UNKNOWN"
+            assert c["confidence"] == "low"
+        for c in result["consumer_criteria"]:
+            assert c["reconciled"] == "UNKNOWN"
+            assert c["confidence"] == "low"
+
+
+class TestReconcileScores:
+    @pytest.mark.asyncio
+    async def test_full_reconciliation(self):
+        """Full reconcile_scores call with mocked LLM. Verify it calls LLM once per page."""
+        from persona_browser.score_reconciler import reconcile_scores
+
+        text_scores = SCORER_RESULTS["text_scores"]
+        visual_scores = SCORER_RESULTS["visual_scores"]
+
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke.return_value = MagicMock(content='{"pb_criteria": [{"feature": "forms", "criterion": "test", "reconciled": "PASS", "confidence": "high", "evidence": "test", "discrepancy": null}], "consumer_criteria": [{"criterion": "test", "reconciled": "PASS", "confidence": "high", "evidence": "test", "discrepancy": null}], "deal_breakers": []}')
+
+        result = await reconcile_scores(
+            text_scores=text_scores,
+            visual_scores=visual_scores,
+            network_verification=NETWORK_VERIFICATION,
+            navigator_output=NAVIGATOR_OUTPUT,
+            manifest=MANIFEST,
+            rubric_text="test rubric",
+            pb_rubric_text="test pb rubric",
+            llm=mock_llm,
+        )
+
+        assert result["version"] == "1.1"
+        assert "pages" in result
+        assert "summary" in result
+        assert "manifest_coverage" in result
+        # LLM should be called once per page (2 pages in fixture)
+        assert mock_llm.ainvoke.call_count == 2
