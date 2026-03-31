@@ -70,59 +70,121 @@ def _evaluate_verification_tasks(
 ) -> list[dict]:
     """Extract and normalize verification task results from navigator output.
 
-    Maps auth_flow_verification fields to structured V1-V4 format.
-    Uses manifest verification_tasks as the definitive list when present.
+    V1 (data_persistence) checks page CONTENT after refresh — is submitted data
+    still displayed? Uses auth_flow_verification.persistence_after_refresh.
+
+    V3 (auth_persistence) checks NETWORK LOG after refresh — do protected API
+    calls still return 200? Uses network_log entries with "refresh" in trigger.
+    Falls back to auth_flow text if network_log has no refresh entries.
+
+    V4 (auth_boundary) checks post_auth_access from auth_flow_verification.
     """
     auth_flow = navigator_output.get("auth_flow_verification", {})
     results: list[dict] = []
 
-    # Mapping from manifest verification_task types to auth_flow_verification fields
-    type_to_auth_field = {
-        "data_persistence": "persistence_after_refresh",
-        "auth_persistence": "persistence_after_refresh",
-        "auth_boundary": "post_auth_access",
-    }
+    # Flatten network_log from all pages
+    all_network_log: list[dict] = []
+    for page in navigator_output.get("pages", []):
+        all_network_log.extend(page.get("network_log", []))
 
     if manifest and "verification_tasks" in manifest:
         for vtask in manifest["verification_tasks"]:
             vid = vtask["id"]
             vtype = vtask["type"]
-            auth_field = type_to_auth_field.get(vtype)
-            evidence_value = auth_flow.get(auth_field) if auth_field and auth_flow else None
 
-            if evidence_value and isinstance(evidence_value, str) and evidence_value.strip():
+            if vtype == "data_persistence":
+                # V1: content check — is submitted data still displayed after refresh?
+                evidence = auth_flow.get("persistence_after_refresh")
+                if evidence and isinstance(evidence, str) and evidence.strip():
+                    results.append({
+                        "id": vid, "type": vtype, "result": "PASS",
+                        "evidence": f"Content check: {evidence}",
+                    })
+                else:
+                    results.append({
+                        "id": vid, "type": vtype, "result": "FAIL",
+                        "evidence": "Data persistence not verified -- no refresh observation from navigator",
+                    })
+
+            elif vtype == "auth_persistence":
+                # V3: network check — do protected API calls return 200 after refresh?
+                post_refresh_calls = [
+                    entry for entry in all_network_log
+                    if "refresh" in entry.get("trigger", "").lower()
+                    and entry.get("status", 0) in range(200, 300)
+                ]
+                if post_refresh_calls:
+                    evidence = "; ".join(
+                        f"{c.get('method', '')} {c.get('url', '')} -> {c.get('status', '')}"
+                        for c in post_refresh_calls
+                    )
+                    results.append({
+                        "id": vid, "type": vtype, "result": "PASS",
+                        "evidence": f"Auth persists: {evidence}",
+                    })
+                elif auth_flow.get("persistence_after_refresh"):
+                    results.append({
+                        "id": vid, "type": vtype, "result": "PASS",
+                        "evidence": f"Auth check (text fallback): {auth_flow['persistence_after_refresh']}",
+                    })
+                else:
+                    results.append({
+                        "id": vid, "type": vtype, "result": "FAIL",
+                        "evidence": "Auth persistence not verified -- no post-refresh API calls in network log",
+                    })
+
+            elif vtype == "auth_boundary":
+                evidence = auth_flow.get("post_auth_access")
+                if evidence and isinstance(evidence, str) and evidence.strip():
+                    results.append({
+                        "id": vid, "type": vtype, "result": "PASS",
+                        "evidence": evidence,
+                    })
+                else:
+                    results.append({
+                        "id": vid, "type": vtype, "result": "FAIL",
+                        "evidence": "Auth boundary not verified by navigator",
+                    })
+
+            else:
                 results.append({
-                    "id": vid,
-                    "type": vtype,
-                    "result": "PASS",
-                    "evidence": evidence_value,
+                    "id": vid, "type": vtype, "result": "FAIL",
+                    "evidence": f"Unknown verification type: {vtype}",
+                })
+
+    elif auth_flow:
+        # No manifest -- derive basic checks from auth_flow_verification
+        if auth_flow.get("persistence_after_refresh"):
+            results.append({
+                "id": "V1", "type": "data_persistence", "result": "PASS",
+                "evidence": f"Content: {auth_flow['persistence_after_refresh']}",
+            })
+            # V3 from network_log if available
+            post_refresh_ok = any(
+                "refresh" in e.get("trigger", "").lower() and e.get("status", 0) in range(200, 300)
+                for e in all_network_log
+            )
+            if post_refresh_ok:
+                refresh_entries = [
+                    e for e in all_network_log
+                    if "refresh" in e.get("trigger", "").lower() and e.get("status", 0) in range(200, 300)
+                ]
+                evidence = "; ".join(
+                    f"{e.get('method', '')} {e.get('url', '')} -> {e.get('status', '')}"
+                    for e in refresh_entries
+                )
+                results.append({
+                    "id": "V3", "type": "auth_persistence", "result": "PASS",
+                    "evidence": f"Auth persists: {evidence}",
                 })
             else:
                 results.append({
-                    "id": vid,
-                    "type": vtype,
-                    "result": "FAIL",
-                    "evidence": "Verification task not performed by navigator",
+                    "id": "V3", "type": "auth_persistence", "result": "PASS",
+                    "evidence": f"Auth check (text fallback): {auth_flow['persistence_after_refresh']}",
                 })
-    elif auth_flow:
-        if auth_flow.get("persistence_after_refresh"):
-            results.append({
-                "id": "V1",
-                "type": "data_persistence",
-                "result": "PASS",
-                "evidence": auth_flow["persistence_after_refresh"],
-            })
-            results.append({
-                "id": "V3",
-                "type": "auth_persistence",
-                "result": "PASS",
-                "evidence": auth_flow["persistence_after_refresh"],
-            })
         if auth_flow.get("post_auth_access"):
             results.append({
-                "id": "V4",
-                "type": "auth_boundary",
-                "result": "PASS",
+                "id": "V4", "type": "auth_boundary", "result": "PASS",
                 "evidence": auth_flow["post_auth_access"],
             })
 
@@ -411,51 +473,91 @@ def _fallback_page(
     text_page: dict | None,
     visual_page: dict | None,
 ) -> dict:
-    """Fallback when LLM is unavailable or parse fails.
+    """Fallback when LLM reconciliation fails. Preserves scorer agreements.
 
-    Collects criteria from whichever scorer output is available,
-    sets all results to UNKNOWN with confidence: low, and deduplicates
-    by criterion key.
+    When both scorers agree on a criterion (both PASS or both FAIL),
+    the agreement is preserved with high confidence. Disagreements and
+    single-scorer results are set to UNKNOWN with low confidence.
     """
-    seen_criteria: set[str] = set()
+    # Index scorer results by criterion key
+    text_pb: dict[str, dict] = {}
+    text_con: dict[str, dict] = {}
+    visual_pb: dict[str, dict] = {}
+    visual_con: dict[str, dict] = {}
+
+    if text_page and isinstance(text_page, dict):
+        for c in text_page.get("pb_criteria", []):
+            key = f"{c.get('feature', '')}:{c.get('criterion', '')}"
+            text_pb[key] = c
+        for c in text_page.get("consumer_criteria", []):
+            text_con[c.get("criterion", "")] = c
+
+    if visual_page and isinstance(visual_page, dict):
+        for c in visual_page.get("pb_criteria", []):
+            key = f"{c.get('feature', '')}:{c.get('criterion', '')}"
+            visual_pb[key] = c
+        for c in visual_page.get("consumer_criteria", []):
+            visual_con[c.get("criterion", "")] = c
+
     pb_criteria: list[dict] = []
+    for key in set(text_pb.keys()) | set(visual_pb.keys()):
+        t = text_pb.get(key)
+        v = visual_pb.get(key)
+        t_result = t["result"] if t else None
+        v_result = v["result"] if v else None
+        ref = t or v
+
+        if t_result and v_result and t_result == v_result and t_result != "UNKNOWN":
+            pb_criteria.append({
+                "feature": ref.get("feature", "unknown"),
+                "criterion": ref.get("criterion", ""),
+                "text_result": t_result,
+                "visual_result": v_result,
+                "reconciled": t_result,
+                "confidence": "high",
+                "evidence": f"Fallback: both scorers agree {t_result}",
+                "discrepancy": None,
+            })
+        else:
+            pb_criteria.append({
+                "feature": ref.get("feature", "unknown"),
+                "criterion": ref.get("criterion", ""),
+                "text_result": t_result or "UNKNOWN",
+                "visual_result": v_result or "UNKNOWN",
+                "reconciled": "UNKNOWN",
+                "confidence": "low",
+                "evidence": "Fallback: LLM reconciliation failed, scorers disagreed or unavailable",
+                "discrepancy": "LLM reconciliation unavailable",
+            })
+
     consumer_criteria: list[dict] = []
+    for key in set(text_con.keys()) | set(visual_con.keys()):
+        t = text_con.get(key)
+        v = visual_con.get(key)
+        t_result = t["result"] if t else None
+        v_result = v["result"] if v else None
+        ref = t or v
 
-    sources = []
-    if text_page:
-        sources.append(text_page)
-    if visual_page:
-        sources.append(visual_page)
-
-    for source in sources:
-        for c in source.get("pb_criteria", []):
-            key = c.get("criterion", "")
-            if key not in seen_criteria:
-                seen_criteria.add(key)
-                pb_criteria.append({
-                    "feature": c.get("feature", "unknown"),
-                    "criterion": key,
-                    "text_result": "UNKNOWN",
-                    "visual_result": "UNKNOWN",
-                    "reconciled": "UNKNOWN",
-                    "confidence": "low",
-                    "evidence": c.get("evidence", "Fallback -- LLM reconciliation unavailable"),
-                    "discrepancy": None,
-                })
-
-        for c in source.get("consumer_criteria", []):
-            key = c.get("criterion", "")
-            if key not in seen_criteria:
-                seen_criteria.add(key)
-                consumer_criteria.append({
-                    "criterion": key,
-                    "text_result": "UNKNOWN",
-                    "visual_result": "UNKNOWN",
-                    "reconciled": "UNKNOWN",
-                    "confidence": "low",
-                    "evidence": c.get("evidence", "Fallback -- LLM reconciliation unavailable"),
-                    "discrepancy": None,
-                })
+        if t_result and v_result and t_result == v_result and t_result != "UNKNOWN":
+            consumer_criteria.append({
+                "criterion": ref.get("criterion", ""),
+                "text_result": t_result,
+                "visual_result": v_result,
+                "reconciled": t_result,
+                "confidence": "high",
+                "evidence": f"Fallback: both scorers agree {t_result}",
+                "discrepancy": None,
+            })
+        else:
+            consumer_criteria.append({
+                "criterion": ref.get("criterion", ""),
+                "text_result": t_result or "UNKNOWN",
+                "visual_result": v_result or "UNKNOWN",
+                "reconciled": "UNKNOWN",
+                "confidence": "low",
+                "evidence": "Fallback: LLM reconciliation failed",
+                "discrepancy": "LLM reconciliation unavailable",
+            })
 
     return {
         "page_id": page_id,
@@ -538,11 +640,10 @@ async def reconcile_scores(
 
     Orchestrates Phase 1 (deterministic pre-processing), Phase 2
     (LLM per-page reconciliation), and Phase 3 (assemble final report).
+
+    Timing is owned by the caller (pipeline.py). This function does not
+    track elapsed time.
     """
-    import time
-
-    start = time.time()
-
     # --- Phase 1: Deterministic pre-processing ---
     manifest_coverage = _check_manifest_coverage(navigator_output, manifest)
     verification_tasks = _evaluate_verification_tasks(navigator_output, manifest)
@@ -616,15 +717,13 @@ async def reconcile_scores(
         reconciled_pages.append(rp)
 
     # --- Phase 3: Assemble final report ---
-    elapsed = time.time() - start
-
     report = _assemble_final_report(
         navigator_output=navigator_output,
         reconciled_pages=reconciled_pages,
         network_verification=network_verification,
         manifest_coverage=manifest_coverage,
         verification_tasks=verification_tasks,
-        elapsed_seconds=elapsed,
+        elapsed_seconds=0,  # caller (pipeline.py) overwrites with real elapsed
     )
 
     return report

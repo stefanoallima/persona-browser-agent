@@ -85,6 +85,7 @@ class TestVerificationTasks:
         assert v1["type"] == "data_persistence"
         assert v1["result"] == "PASS"
         assert len(v1["evidence"]) > 0
+        assert "content" in v1["evidence"].lower()
 
     def test_auth_persistence_maps_correctly(self):
         from persona_browser.score_reconciler import _evaluate_verification_tasks
@@ -94,6 +95,17 @@ class TestVerificationTasks:
         assert v3 is not None
         assert v3["type"] == "auth_persistence"
         assert v3["result"] == "PASS"
+        assert "auth" in v3["evidence"].lower()
+
+    def test_v1_v3_produce_different_evidence(self):
+        """V1 (data) and V3 (auth) must check different things."""
+        from persona_browser.score_reconciler import _evaluate_verification_tasks
+
+        result = _evaluate_verification_tasks(NAVIGATOR_OUTPUT, MANIFEST)
+        v1 = next((t for t in result if t["id"] == "V1"), None)
+        v3 = next((t for t in result if t["id"] == "V3"), None)
+        assert v1 is not None and v3 is not None
+        assert v1["evidence"] != v3["evidence"], "V1 and V3 should not have identical evidence"
 
     def test_not_performed(self):
         from persona_browser.score_reconciler import _evaluate_verification_tasks
@@ -114,7 +126,7 @@ class TestVerificationTasks:
         v1 = next((t for t in result if t["id"] == "V1"), None)
         assert v1 is not None
         assert v1["result"] == "FAIL"
-        assert "not performed" in v1["evidence"].lower()
+        assert "not verified" in v1["evidence"].lower() or "not performed" in v1["evidence"].lower()
 
     def test_no_manifest(self):
         from persona_browser.score_reconciler import _evaluate_verification_tasks
@@ -458,17 +470,52 @@ class TestReconcilePage:
         )
 
         assert result["page_id"] == "registration"
-        # All criteria should be UNKNOWN (fallback)
+        # Fallback preserves agreements: both-agree criteria get their agreed result,
+        # disagreements and single-scorer get UNKNOWN
         for c in result["pb_criteria"]:
-            assert c["reconciled"] == "UNKNOWN"
-            assert c["confidence"] == "low"
-            assert c["text_result"] == "UNKNOWN"
-            assert c["visual_result"] == "UNKNOWN"
+            assert c["reconciled"] in ("PASS", "FAIL", "UNKNOWN")
+            assert c["confidence"] in ("high", "low")
+            if c["confidence"] == "low":
+                assert c["reconciled"] == "UNKNOWN"
         for c in result["consumer_criteria"]:
-            assert c["reconciled"] == "UNKNOWN"
-            assert c["confidence"] == "low"
-            assert c["text_result"] == "UNKNOWN"
-            assert c["visual_result"] == "UNKNOWN"
+            assert c["reconciled"] in ("PASS", "FAIL", "UNKNOWN")
+            assert c["confidence"] in ("high", "low")
+
+
+class TestFallbackPreservesAgreements:
+    def test_both_agree_preserved(self):
+        """Fallback should keep both-agree results, only UNKNOWN on disagreements."""
+        from persona_browser.score_reconciler import _fallback_page
+
+        text_page = {
+            "pb_criteria": [
+                {"feature": "forms", "criterion": "Labels visible", "result": "PASS", "evidence": "...", "confidence": "high"},
+                {"feature": "forms", "criterion": "Required marked", "result": "FAIL", "evidence": "...", "confidence": "high"},
+                {"feature": "forms", "criterion": "Error near field", "result": "PASS", "evidence": "...", "confidence": "high"},
+            ],
+            "consumer_criteria": [],
+        }
+        visual_page = {
+            "pb_criteria": [
+                {"feature": "forms", "criterion": "Labels visible", "result": "PASS", "evidence": "...", "confidence": "high"},
+                {"feature": "forms", "criterion": "Required marked", "result": "FAIL", "evidence": "...", "confidence": "high"},
+                {"feature": "forms", "criterion": "Error near field", "result": "FAIL", "evidence": "...", "confidence": "high"},
+            ],
+            "consumer_criteria": [],
+        }
+        result = _fallback_page("registration", text_page, visual_page)
+
+        labels = next(c for c in result["pb_criteria"] if c["criterion"] == "Labels visible")
+        assert labels["reconciled"] == "PASS"
+        assert labels["confidence"] == "high"
+
+        required = next(c for c in result["pb_criteria"] if c["criterion"] == "Required marked")
+        assert required["reconciled"] == "FAIL"
+        assert required["confidence"] == "high"
+
+        error = next(c for c in result["pb_criteria"] if c["criterion"] == "Error near field")
+        assert error["reconciled"] == "UNKNOWN"
+        assert error["confidence"] == "low"
 
 
 class TestReconcileScores:
