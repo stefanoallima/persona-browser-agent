@@ -59,18 +59,18 @@
           "visual_result": "UNKNOWN",
           "reconciled": "UNKNOWN",
           "confidence": "low",
-          "evidence": "Neither scorer could evaluate — no error state captured",
+          "evidence": "Neither scorer could evaluate -- no error state captured",
           "discrepancy": null
         },
         {
           "feature": "forms",
           "criterion": "Submit button is visible without scrolling",
-          "text_result": "UNKNOWN",
+          "text_result": "FAIL",
           "visual_result": "PASS",
           "reconciled": "PASS",
           "confidence": "medium",
           "evidence": "Visual scorer confirms button visible in viewport. Text scorer could not assess spatial position.",
-          "discrepancy": "Text scorer lacked spatial information. Visual scorer's assessment is definitive."
+          "discrepancy": "Text scorer reported scrolling needed; visual scorer confirms button visible in viewport. Spatial criterion -- visual scorer is definitive."
         },
         {
           "feature": "cta",
@@ -214,12 +214,12 @@
       "No password strength indicator"
     ],
     "would_return": true,
-    "would_recommend": "Yes — the signup flow is frictionless",
+    "would_recommend": "Yes -- the signup flow is frictionless",
     "satisfaction": 8,
     "satisfaction_reason": "Registration completed in one attempt with no errors."
   },
   "network_verification": {
-    "_source": "Network Verifier (deterministic module — not LLM)",
+    "_source": "Network Verifier (deterministic module -- not LLM)",
     "api_calls_total": 3,
     "api_calls_matched_codeintel": 3,
     "api_calls_unmatched": 0,
@@ -237,7 +237,7 @@
         "status": 201,
         "expected_status": 201,
         "contract_match": true,
-        "auth_check": "N/A (public endpoint — sets auth)"
+        "auth_check": "N/A (public endpoint -- sets auth)"
       },
       {
         "method": "GET",
@@ -246,7 +246,7 @@
         "status": 200,
         "expected_status": 200,
         "contract_match": true,
-        "auth_check": "PASS — session cookie sent and accepted"
+        "auth_check": "PASS -- session cookie sent and accepted"
       },
       {
         "method": "GET",
@@ -255,7 +255,7 @@
         "status": 200,
         "expected_status": 200,
         "contract_match": true,
-        "auth_check": "PASS — session cookie still valid after page refresh"
+        "auth_check": "PASS -- session cookie still valid after page refresh"
       }
     ]
   },
@@ -291,7 +291,7 @@
     "verification_tasks_passed": 3,
     "verification_tasks_failed": 0,
     "network_issues": 0,
-    "total_discrepancies": 5,
+    "total_discrepancies": 6,
     "deal_breakers_triggered": [],
     "pages_with_failures": [
       "registration"

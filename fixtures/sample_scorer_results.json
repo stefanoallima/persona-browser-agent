@@ -17,7 +17,7 @@
         "status": 201,
         "expected_status": 201,
         "contract_match": true,
-        "auth_check": "N/A (public endpoint — sets auth)"
+        "auth_check": "N/A (public endpoint -- sets auth)"
       },
       {
         "method": "GET",
@@ -26,7 +26,7 @@
         "status": 200,
         "expected_status": 200,
         "contract_match": true,
-        "auth_check": "PASS — session cookie sent and accepted"
+        "auth_check": "PASS -- session cookie sent and accepted"
       },
       {
         "method": "GET",
@@ -35,7 +35,7 @@
         "status": 200,
         "expected_status": 200,
         "contract_match": true,
-        "auth_check": "PASS — session cookie still valid after page refresh"
+        "auth_check": "PASS -- session cookie still valid after page refresh"
       }
     ]
   },
@@ -67,9 +67,9 @@
         {
           "feature": "forms",
           "criterion": "Submit button is visible without scrolling",
-          "result": "UNKNOWN",
-          "evidence": "Cannot determine scrolling position from text observations",
-          "confidence": "low"
+          "result": "FAIL",
+          "evidence": "Navigator reported needing to scroll to find the submit button",
+          "confidence": "medium"
         },
         {
           "feature": "baseline",
