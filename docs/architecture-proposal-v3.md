@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-30
 **Updated**: 2026-03-30 — browser-use v0.12+ API changes (CDP migration)
-**Status**: PROPOSAL — pending decision
+**Status**: APPROVED — Phases 0-4 implemented (2026-03-31)
 **Responds to**: `feedback_browser_use.md`, critical review of v2
 **Supersedes**: v2 (2026-03-30), v1 (2026-03-29)
 
@@ -2080,7 +2080,7 @@ Be a reusable, sellable service
 
 ## Implementation Phases
 
-### Phase 1: PB Feature Rubrics + Formats + Test Fixtures
+### Phase 1: PB Feature Rubrics + Formats + Test Fixtures -- COMPLETED (2026-03-30)
 
 **Repo**: persona-browser-agent
 - Define feature-based PB rubric criteria (forms, navigation, CTA, data display, error states, baseline, **task completion**)
@@ -2096,7 +2096,7 @@ Be a reusable, sellable service
 - **No code changes** — rubric content, format documentation, and test fixtures only
 - **Effort**: Medium
 
-### Phase 2: Navigator (observation-only, no scoring, with network capture)
+### Phase 2: Navigator (observation-only, no scoring, with network capture) -- COMPLETED (2026-03-30)
 
 **Repo**: persona-browser-agent
 - **Migrate from `Browser` to `BrowserSession` + `BrowserProfile`** (browser-use v0.12+ CDP-based API)
@@ -2115,7 +2115,7 @@ Be a reusable, sellable service
 - Enable video recording pass-through via `BrowserProfile`
 - **Effort**: Medium (reduced from Medium-Large — HAR recording and structured history eliminate custom interception work)
 
-### Phase 3: Text Scorer + Visual Scorer + Network Verifier
+### Phase 3: Text Scorer + Visual Scorer + Network Verifier -- COMPLETED (2026-03-30)
 
 **Repo**: persona-browser-agent
 - New module: `persona_browser/text_scorer.py` — **GLM 5-turbo**, text-only scoring with codeintel verification
@@ -2136,7 +2136,7 @@ Be a reusable, sellable service
 - All three (Text Scorer, Visual Scorer, Network Verifier) run in parallel after navigator completes
 - **Effort**: Large
 
-### Phase 4: Score Reconciler + Final Pipeline
+### Phase 4: Score Reconciler + Final Pipeline -- COMPLETED (2026-03-31)
 
 **Repo**: persona-browser-agent
 - New module: `persona_browser/score_reconciler.py` — **Sonnet**, reconciliation + discrepancy analysis + manifest coverage

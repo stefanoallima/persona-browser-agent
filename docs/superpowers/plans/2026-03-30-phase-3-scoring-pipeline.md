@@ -1,5 +1,7 @@
 # Phase 3: Scoring Pipeline Implementation Plan
 
+> **Status: COMPLETED** (2026-03-30). Implementation in `persona_browser/network_verifier.py`, `text_scorer.py`, `visual_scorer.py`, `codeintel_filter.py`, `scorer_runner.py`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Each task is independent — Tasks 1–4 can be done in parallel; Task 5 depends on Tasks 1–3.
 
 **Goal:** Build three independent scoring modules (Network Verifier, Text Scorer, Visual Scorer) that analyze the navigator's output and produce per-criterion PASS/FAIL/UNKNOWN results, plus a codeintel filter utility and a parallel scorer runner. All output conforms to the schemas in `schemas/`.
