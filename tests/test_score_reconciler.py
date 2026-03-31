@@ -462,9 +462,13 @@ class TestReconcilePage:
         for c in result["pb_criteria"]:
             assert c["reconciled"] == "UNKNOWN"
             assert c["confidence"] == "low"
+            assert c["text_result"] == "UNKNOWN"
+            assert c["visual_result"] == "UNKNOWN"
         for c in result["consumer_criteria"]:
             assert c["reconciled"] == "UNKNOWN"
             assert c["confidence"] == "low"
+            assert c["text_result"] == "UNKNOWN"
+            assert c["visual_result"] == "UNKNOWN"
 
 
 class TestReconcileScores:

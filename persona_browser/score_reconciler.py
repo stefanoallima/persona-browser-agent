@@ -365,8 +365,8 @@ def _build_reconciliation_prompt(
 ## Output Format
 
 Return a single JSON object with exactly three top-level keys:
-- `pb_criteria`: array of objects, each with: feature, criterion, reconciled (PASS/FAIL/UNKNOWN), confidence (high/medium/low), evidence, discrepancy (string or null)
-- `consumer_criteria`: array of objects, each with: criterion, reconciled (PASS/FAIL/UNKNOWN), confidence (high/medium/low), evidence, discrepancy (string or null)
+- `pb_criteria`: array of objects, each with: feature, criterion, text_result, visual_result, reconciled (PASS/FAIL/UNKNOWN), confidence (high/medium/low), evidence, discrepancy (string or null)
+- `consumer_criteria`: array of objects, each with: criterion, text_result, visual_result, reconciled (PASS/FAIL/UNKNOWN), confidence (high/medium/low), evidence, discrepancy (string or null)
 - `deal_breakers`: array of strings listing any triggered deal-breakers (empty array if none)
 
 Include ALL criteria from both scorers (deduplicated by criterion text).
@@ -435,6 +435,8 @@ def _fallback_page(
                 pb_criteria.append({
                     "feature": c.get("feature", "unknown"),
                     "criterion": key,
+                    "text_result": "UNKNOWN",
+                    "visual_result": "UNKNOWN",
                     "reconciled": "UNKNOWN",
                     "confidence": "low",
                     "evidence": c.get("evidence", "Fallback -- LLM reconciliation unavailable"),
@@ -447,6 +449,8 @@ def _fallback_page(
                 seen_criteria.add(key)
                 consumer_criteria.append({
                     "criterion": key,
+                    "text_result": "UNKNOWN",
+                    "visual_result": "UNKNOWN",
                     "reconciled": "UNKNOWN",
                     "confidence": "low",
                     "evidence": c.get("evidence", "Fallback -- LLM reconciliation unavailable"),
@@ -500,6 +504,12 @@ async def _reconcile_page(
     if parsed is None:
         logger.warning("Failed to parse LLM response for page %s, using fallback", page_id)
         return _fallback_page(page_id, text_page, visual_page)
+
+    # Ensure text_result and visual_result exist on every criterion
+    for criteria_list_key in ("pb_criteria", "consumer_criteria"):
+        for c in parsed.get(criteria_list_key, []):
+            c.setdefault("text_result", "UNKNOWN")
+            c.setdefault("visual_result", "UNKNOWN")
 
     return {
         "page_id": page_id,
