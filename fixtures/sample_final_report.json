@@ -1,0 +1,307 @@
+{
+  "version": "1.1",
+  "status": "DONE",
+  "elapsed_seconds": 52.3,
+  "persona": "micro-persona-signup-form",
+  "url": "http://localhost:3333",
+  "scope": "gate",
+  "agent_result": "Successfully completed the signup flow on the test app...",
+  "manifest_coverage": {
+    "expected_pages": [
+      "registration",
+      "dashboard"
+    ],
+    "visited": [
+      "registration",
+      "dashboard"
+    ],
+    "not_visited": [],
+    "unexpected_pages": []
+  },
+  "pages": [
+    {
+      "id": "registration",
+      "url_visited": "http://localhost:3333/register",
+      "screenshot": "screenshots/step_1.png",
+      "features_detected": [
+        "forms",
+        "cta",
+        "baseline"
+      ],
+      "observations": {
+        "description": "The registration page renders a centered card on a purple gradient background..."
+      },
+      "pb_criteria": [
+        {
+          "feature": "forms",
+          "criterion": "Every field has a visible label",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm: 3 fields with visible labels (Full Name, Email Address, Password)",
+          "discrepancy": null
+        },
+        {
+          "feature": "forms",
+          "criterion": "Required fields are marked",
+          "text_result": "FAIL",
+          "visual_result": "FAIL",
+          "reconciled": "FAIL",
+          "confidence": "high",
+          "evidence": "Both scorers confirm: no required field indicators found",
+          "discrepancy": null
+        },
+        {
+          "feature": "forms",
+          "criterion": "Error message appears near the triggering field",
+          "text_result": "UNKNOWN",
+          "visual_result": "UNKNOWN",
+          "reconciled": "UNKNOWN",
+          "confidence": "low",
+          "evidence": "Neither scorer could evaluate — no error state captured",
+          "discrepancy": null
+        },
+        {
+          "feature": "forms",
+          "criterion": "Submit button is visible without scrolling",
+          "text_result": "UNKNOWN",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "medium",
+          "evidence": "Visual scorer confirms button visible in viewport. Text scorer could not assess spatial position.",
+          "discrepancy": "Text scorer lacked spatial information. Visual scorer's assessment is definitive."
+        },
+        {
+          "feature": "cta",
+          "criterion": "Primary CTA is the most visually prominent element",
+          "text_result": "UNKNOWN",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "medium",
+          "evidence": "Visual scorer confirms Register button has purple gradient, full-width, most prominent. Only visual scorer evaluated this criterion.",
+          "discrepancy": "Only evaluated by visual scorer"
+        },
+        {
+          "feature": "baseline",
+          "criterion": "Page loads without visible errors",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm clean page load",
+          "discrepancy": null
+        },
+        {
+          "feature": "baseline",
+          "criterion": "Text is readable (sufficient contrast, reasonable size)",
+          "text_result": "UNKNOWN",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "medium",
+          "evidence": "Visual scorer confirms dark text on white card with good contrast. Only visual scorer evaluated this criterion.",
+          "discrepancy": "Only evaluated by visual scorer"
+        }
+      ],
+      "consumer_criteria": [
+        {
+          "criterion": "Registration form has Full Name, Email Address, and Password fields",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm all three fields present with correct labels",
+          "codeintel_ref": "pages[0].elements.forms[0].fields",
+          "discrepancy": null
+        },
+        {
+          "criterion": "Submitting valid data redirects to /dashboard",
+          "text_result": "PASS",
+          "visual_result": "UNKNOWN",
+          "reconciled": "PASS",
+          "confidence": "medium",
+          "evidence": "Text scorer confirms redirect occurred. Visual scorer cannot verify redirect from screenshot.",
+          "discrepancy": "Visual scorer lacked redirect information. Text scorer's assessment is definitive for behavioral criterion."
+        }
+      ],
+      "deal_breakers": []
+    },
+    {
+      "id": "dashboard",
+      "url_visited": "http://localhost:3333/dashboard",
+      "screenshot": "screenshots/step_5.png",
+      "features_detected": [
+        "data_display",
+        "navigation",
+        "baseline"
+      ],
+      "observations": {
+        "description": "The dashboard page renders a centered card on the same purple gradient background..."
+      },
+      "pb_criteria": [
+        {
+          "feature": "baseline",
+          "criterion": "Page loads without visible errors",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm dashboard loaded cleanly",
+          "discrepancy": null
+        },
+        {
+          "feature": "data_display",
+          "criterion": "Most important data is above the fold",
+          "text_result": "UNKNOWN",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "medium",
+          "evidence": "Visual scorer confirms user data visible in top half of viewport",
+          "discrepancy": "Text scorer lacked spatial information. Visual scorer's assessment is definitive."
+        },
+        {
+          "feature": "navigation",
+          "criterion": "No dead-end pages (always a path forward or back)",
+          "text_result": "UNKNOWN",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "medium",
+          "evidence": "Visual scorer confirms Logout button provides exit path. Only visual scorer evaluated.",
+          "discrepancy": "Only evaluated by visual scorer"
+        }
+      ],
+      "consumer_criteria": [
+        {
+          "criterion": "Dashboard displays user's full name",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm 'Name: Jordan Rivera' displayed",
+          "discrepancy": null
+        },
+        {
+          "criterion": "Dashboard displays user's email address",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm 'Email: jordan@example.com' displayed",
+          "discrepancy": null
+        },
+        {
+          "criterion": "Logout button is present",
+          "text_result": "PASS",
+          "visual_result": "PASS",
+          "reconciled": "PASS",
+          "confidence": "high",
+          "evidence": "Both scorers confirm Logout button visible",
+          "discrepancy": null
+        }
+      ],
+      "deal_breakers": []
+    }
+  ],
+  "experience": {
+    "first_impression": "Clean, minimal signup form. Purple gradient background gives it a modern look.",
+    "easy": [
+      "Form fields are clearly labeled",
+      "Single-action flow: fill form, click Register, done",
+      "Immediate feedback via redirect to dashboard on success"
+    ],
+    "hard": [],
+    "hesitation_points": [
+      "No password strength indicator"
+    ],
+    "would_return": true,
+    "would_recommend": "Yes — the signup flow is frictionless",
+    "satisfaction": 8,
+    "satisfaction_reason": "Registration completed in one attempt with no errors."
+  },
+  "network_verification": {
+    "_source": "Network Verifier (deterministic module — not LLM)",
+    "api_calls_total": 3,
+    "api_calls_matched_codeintel": 3,
+    "api_calls_unmatched": 0,
+    "api_errors_during_normal_flow": 0,
+    "auth_token_set_after_auth": true,
+    "auth_token_sent_on_protected_requests": true,
+    "auth_persists_after_refresh": true,
+    "deal_breakers": [],
+    "issues": [],
+    "per_endpoint": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register",
+        "matched_codeintel": true,
+        "status": 201,
+        "expected_status": 201,
+        "contract_match": true,
+        "auth_check": "N/A (public endpoint — sets auth)"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/me",
+        "matched_codeintel": true,
+        "status": 200,
+        "expected_status": 200,
+        "contract_match": true,
+        "auth_check": "PASS — session cookie sent and accepted"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/me",
+        "matched_codeintel": true,
+        "status": 200,
+        "expected_status": 200,
+        "contract_match": true,
+        "auth_check": "PASS — session cookie still valid after page refresh"
+      }
+    ]
+  },
+  "verification_tasks": [
+    {
+      "id": "V1",
+      "type": "data_persistence",
+      "result": "PASS",
+      "evidence": "Dashboard re-rendered after F5 page refresh without redirect to /register; GET /api/user/me returned 200 again, confirming the httpOnly session cookie persists across full page reloads"
+    },
+    {
+      "id": "V3",
+      "type": "auth_persistence",
+      "result": "PASS",
+      "evidence": "Dashboard re-rendered after F5 page refresh without redirect to /register; GET /api/user/me returned 200 again, confirming the httpOnly session cookie persists across full page reloads"
+    },
+    {
+      "id": "V4",
+      "type": "auth_boundary",
+      "result": "PASS",
+      "evidence": "After POST /api/auth/register 201, browser redirected to /dashboard which rendered correctly; GET /api/user/me returned 200 with user data, confirming the session cookie was accepted by the server"
+    }
+  ],
+  "summary": {
+    "pb_criteria_total": 10,
+    "pb_criteria_passed": 8,
+    "pb_criteria_failed": 1,
+    "pb_criteria_unknown": 1,
+    "consumer_criteria_total": 5,
+    "consumer_criteria_passed": 5,
+    "consumer_criteria_failed": 0,
+    "verification_tasks_total": 3,
+    "verification_tasks_passed": 3,
+    "verification_tasks_failed": 0,
+    "network_issues": 0,
+    "total_discrepancies": 5,
+    "deal_breakers_triggered": [],
+    "pages_with_failures": [
+      "registration"
+    ],
+    "pages_clean": [
+      "dashboard"
+    ]
+  },
+  "screenshots": [
+    "screenshots/step_1.png",
+    "screenshots/step_5.png"
+  ]
+}

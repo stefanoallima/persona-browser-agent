@@ -1,0 +1,266 @@
+{
+  "network_verification": {
+    "api_calls_total": 3,
+    "api_calls_matched_codeintel": 3,
+    "api_calls_unmatched": 0,
+    "api_errors_during_normal_flow": 0,
+    "auth_token_set_after_auth": true,
+    "auth_token_sent_on_protected_requests": true,
+    "auth_persists_after_refresh": true,
+    "deal_breakers": [],
+    "issues": [],
+    "per_endpoint": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register",
+        "matched_codeintel": true,
+        "status": 201,
+        "expected_status": 201,
+        "contract_match": true,
+        "auth_check": "N/A (public endpoint — sets auth)"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/me",
+        "matched_codeintel": true,
+        "status": 200,
+        "expected_status": 200,
+        "contract_match": true,
+        "auth_check": "PASS — session cookie sent and accepted"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/me",
+        "matched_codeintel": true,
+        "status": 200,
+        "expected_status": 200,
+        "contract_match": true,
+        "auth_check": "PASS — session cookie still valid after page refresh"
+      }
+    ]
+  },
+  "text_scores": [
+    {
+      "page_id": "registration",
+      "pb_criteria": [
+        {
+          "feature": "forms",
+          "criterion": "Every field has a visible label",
+          "result": "PASS",
+          "evidence": "Navigator described 3 labeled fields: Full Name, Email Address, Password",
+          "confidence": "high"
+        },
+        {
+          "feature": "forms",
+          "criterion": "Required fields are marked",
+          "result": "FAIL",
+          "evidence": "No asterisks or 'required' indicators described by navigator",
+          "confidence": "high"
+        },
+        {
+          "feature": "forms",
+          "criterion": "Error message appears near the triggering field",
+          "result": "UNKNOWN",
+          "evidence": "Cannot determine spatial position from text observations",
+          "confidence": "low"
+        },
+        {
+          "feature": "forms",
+          "criterion": "Submit button is visible without scrolling",
+          "result": "UNKNOWN",
+          "evidence": "Cannot determine scrolling position from text observations",
+          "confidence": "low"
+        },
+        {
+          "feature": "baseline",
+          "criterion": "Page loads without visible errors",
+          "result": "PASS",
+          "evidence": "Navigator reported clean page load, no errors",
+          "confidence": "high"
+        }
+      ],
+      "consumer_criteria": [
+        {
+          "criterion": "Registration form has Full Name, Email Address, and Password fields",
+          "result": "PASS",
+          "evidence": "Navigator described all three fields present",
+          "confidence": "high",
+          "codeintel_ref": "pages[0].elements.forms[0].fields"
+        },
+        {
+          "criterion": "Submitting valid data redirects to /dashboard",
+          "result": "PASS",
+          "evidence": "Navigator reported redirect to /dashboard after form submission",
+          "confidence": "high",
+          "codeintel_ref": "pages[0].elements.forms[0].on_success.redirect"
+        }
+      ]
+    },
+    {
+      "page_id": "dashboard",
+      "pb_criteria": [
+        {
+          "feature": "baseline",
+          "criterion": "Page loads without visible errors",
+          "result": "PASS",
+          "evidence": "Dashboard loaded with user data displayed",
+          "confidence": "high"
+        },
+        {
+          "feature": "data_display",
+          "criterion": "Most important data is above the fold",
+          "result": "UNKNOWN",
+          "evidence": "Cannot determine fold position from text observations",
+          "confidence": "low"
+        }
+      ],
+      "consumer_criteria": [
+        {
+          "criterion": "Dashboard displays user's full name",
+          "result": "PASS",
+          "evidence": "Navigator saw 'Name: Jordan Rivera'",
+          "confidence": "high"
+        },
+        {
+          "criterion": "Dashboard displays user's email address",
+          "result": "PASS",
+          "evidence": "Navigator saw 'Email: jordan@example.com'",
+          "confidence": "high"
+        },
+        {
+          "criterion": "Logout button is present",
+          "result": "PASS",
+          "evidence": "Navigator described 'Logout button visible'",
+          "confidence": "high"
+        }
+      ]
+    }
+  ],
+  "visual_scores": [
+    {
+      "page_id": "registration",
+      "features_detected": [
+        "forms",
+        "cta",
+        "baseline"
+      ],
+      "pb_criteria": [
+        {
+          "feature": "forms",
+          "criterion": "Every field has a visible label",
+          "result": "PASS",
+          "evidence": "Screenshot shows 3 fields with labels: Full Name, Email Address, Password",
+          "confidence": "high"
+        },
+        {
+          "feature": "forms",
+          "criterion": "Required fields are marked",
+          "result": "FAIL",
+          "evidence": "No asterisks or required indicators visible in screenshot",
+          "confidence": "high"
+        },
+        {
+          "feature": "forms",
+          "criterion": "Error message appears near the triggering field",
+          "result": "UNKNOWN",
+          "evidence": "No error state visible in the screenshot taken (form was submitted successfully)",
+          "confidence": "low"
+        },
+        {
+          "feature": "forms",
+          "criterion": "Submit button is visible without scrolling",
+          "result": "PASS",
+          "evidence": "Register button visible in screenshot viewport without scrolling",
+          "confidence": "high"
+        },
+        {
+          "feature": "cta",
+          "criterion": "Primary CTA is the most visually prominent element",
+          "result": "PASS",
+          "evidence": "Register button has purple gradient, full-width, stands out",
+          "confidence": "high"
+        },
+        {
+          "feature": "baseline",
+          "criterion": "Page loads without visible errors",
+          "result": "PASS",
+          "evidence": "Clean page render, no error messages or broken elements",
+          "confidence": "high"
+        },
+        {
+          "feature": "baseline",
+          "criterion": "Text is readable (sufficient contrast, reasonable size)",
+          "result": "PASS",
+          "evidence": "Dark text on white card, good contrast ratio",
+          "confidence": "high"
+        }
+      ],
+      "consumer_criteria": [
+        {
+          "criterion": "Registration form has Full Name, Email Address, and Password fields",
+          "result": "PASS",
+          "evidence": "All three fields visible in screenshot with correct labels",
+          "confidence": "high",
+          "codeintel_ref": "pages[0].elements.forms[0].fields"
+        },
+        {
+          "criterion": "Submitting valid data redirects to /dashboard",
+          "result": "UNKNOWN",
+          "evidence": "Cannot verify redirect from a static screenshot",
+          "confidence": "low"
+        }
+      ]
+    },
+    {
+      "page_id": "dashboard",
+      "features_detected": [
+        "data_display",
+        "navigation",
+        "baseline"
+      ],
+      "pb_criteria": [
+        {
+          "feature": "baseline",
+          "criterion": "Page loads without visible errors",
+          "result": "PASS",
+          "evidence": "Dashboard rendered cleanly with user data card",
+          "confidence": "high"
+        },
+        {
+          "feature": "data_display",
+          "criterion": "Most important data is above the fold",
+          "result": "PASS",
+          "evidence": "User name and email visible in top half of viewport",
+          "confidence": "high"
+        },
+        {
+          "feature": "navigation",
+          "criterion": "No dead-end pages (always a path forward or back)",
+          "result": "PASS",
+          "evidence": "Logout button provides exit path from dashboard",
+          "confidence": "high"
+        }
+      ],
+      "consumer_criteria": [
+        {
+          "criterion": "Dashboard displays user's full name",
+          "result": "PASS",
+          "evidence": "Screenshot shows 'Name: Jordan Rivera' in user info card",
+          "confidence": "high"
+        },
+        {
+          "criterion": "Dashboard displays user's email address",
+          "result": "PASS",
+          "evidence": "Screenshot shows 'Email: jordan@example.com' in user info card",
+          "confidence": "high"
+        },
+        {
+          "criterion": "Logout button is present",
+          "result": "PASS",
+          "evidence": "Logout button visible at bottom of card",
+          "confidence": "high"
+        }
+      ]
+    }
+  ]
+}
