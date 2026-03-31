@@ -278,6 +278,57 @@ class TestComputeSummary:
         assert "registration" in result["pages_with_failures"]
         assert "dashboard" in result["pages_clean"]
 
+        # Spot check eligibility should be present
+        sce = result["spot_check_eligibility"]
+        assert sce["total_criteria"] == 15  # 10 pb + 5 consumer
+        assert sce["playwright_verifiable"] + sce["non_verifiable"] == sce["total_criteria"]
+
+
+class TestSpotCheckEligibility:
+    def test_spatial_criteria_non_verifiable(self):
+        """Criteria with spatial/visual keywords should be non-verifiable."""
+        from persona_browser.score_reconciler import _compute_spot_check_eligibility
+
+        pages = [{
+            "id": "test",
+            "pb_criteria": [
+                {"criterion": "Error message appears near the triggering field", "reconciled": "FAIL"},
+                {"criterion": "Submit button is visible without scrolling", "reconciled": "PASS"},
+                {"criterion": "Text is readable (sufficient contrast, reasonable size)", "reconciled": "PASS"},
+                {"criterion": "Primary CTA is the most visually prominent element", "reconciled": "PASS"},
+            ],
+            "consumer_criteria": [],
+            "deal_breakers": [],
+        }]
+        result = _compute_spot_check_eligibility(pages)
+        assert result["total_criteria"] == 4
+        # "near", "without scrolling", "contrast"/"readable", "prominent" → all non-verifiable
+        assert result["non_verifiable"] == 4
+        assert result["playwright_verifiable"] == 0
+
+    def test_behavioral_criteria_verifiable(self):
+        """Criteria about element existence, form submission, etc. are verifiable."""
+        from persona_browser.score_reconciler import _compute_spot_check_eligibility
+
+        pages = [{
+            "id": "test",
+            "pb_criteria": [
+                {"criterion": "Every field has a visible label", "reconciled": "PASS"},
+                {"criterion": "Required fields are marked", "reconciled": "FAIL"},
+                {"criterion": "Page loads without visible errors", "reconciled": "PASS"},
+            ],
+            "consumer_criteria": [
+                {"criterion": "Registration form has Full Name, Email, Password fields", "reconciled": "PASS"},
+                {"criterion": "Submitting valid data redirects to /dashboard", "reconciled": "PASS"},
+            ],
+            "deal_breakers": [],
+        }]
+        result = _compute_spot_check_eligibility(pages)
+        assert result["total_criteria"] == 5
+        assert result["playwright_verifiable"] == 5
+        assert result["non_verifiable"] == 0
+        assert result["non_verifiable_criteria"] == []
+
 
 class TestAssembleFinalReport:
     def test_version_is_set(self):

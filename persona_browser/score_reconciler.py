@@ -289,7 +289,47 @@ def _compute_summary(
         "deal_breakers_triggered": all_deal_breakers,
         "pages_with_failures": pages_with_failures,
         "pages_clean": pages_clean,
+        "spot_check_eligibility": _compute_spot_check_eligibility(reconciled_pages),
     }
+
+
+# Keywords indicating criteria that require visual/spatial judgment
+# and cannot be spot-checked by Playwright element queries
+_NON_VERIFIABLE_KEYWORDS = frozenset([
+    "near", "color", "colour", "prominent", "hierarchy", "aesthetic",
+    "readable", "contrast", "above the fold", "visually", "spatial",
+    "without scrolling",
+])
+
+
+def _compute_spot_check_eligibility(reconciled_pages: list[dict]) -> dict:
+    """Classify criteria as Playwright-verifiable vs non-verifiable.
+
+    Criteria containing spatial/visual/aesthetic keywords are classified
+    as non-verifiable by Playwright. Everything else is assumed verifiable.
+    This lets SUDD's ux-tester report its spot check coverage honestly.
+    """
+    total = 0
+    verifiable = 0
+    non_verifiable_list: list[str] = []
+
+    for page in reconciled_pages:
+        all_criteria = page.get("pb_criteria", []) + page.get("consumer_criteria", [])
+        for c in all_criteria:
+            total += 1
+            criterion_lower = c.get("criterion", "").lower()
+            if any(kw in criterion_lower for kw in _NON_VERIFIABLE_KEYWORDS):
+                non_verifiable_list.append(c.get("criterion", ""))
+            else:
+                verifiable += 1
+
+    return {
+        "total_criteria": total,
+        "playwright_verifiable": verifiable,
+        "non_verifiable": total - verifiable,
+        "non_verifiable_criteria": non_verifiable_list,
+    }
+
 
 def _assemble_final_report(
     navigator_output: dict,

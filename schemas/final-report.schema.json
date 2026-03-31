@@ -480,6 +480,32 @@
           "type": "array",
           "description": "Page IDs with no failures and no deal-breakers.",
           "items": { "type": "string" }
+        },
+        "spot_check_eligibility": {
+          "type": "object",
+          "description": "Classification of criteria as Playwright-verifiable vs non-verifiable (spatial/visual).",
+          "properties": {
+            "total_criteria": {
+              "type": "integer",
+              "description": "Total number of criteria across all pages.",
+              "minimum": 0
+            },
+            "playwright_verifiable": {
+              "type": "integer",
+              "description": "Number of criteria that can be verified by Playwright element queries.",
+              "minimum": 0
+            },
+            "non_verifiable": {
+              "type": "integer",
+              "description": "Number of criteria requiring visual/spatial judgment (not Playwright-verifiable).",
+              "minimum": 0
+            },
+            "non_verifiable_criteria": {
+              "type": "array",
+              "description": "List of criterion descriptions that are non-verifiable.",
+              "items": { "type": "string" }
+            }
+          }
         }
       }
     },

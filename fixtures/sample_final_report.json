@@ -298,7 +298,19 @@
     ],
     "pages_clean": [
       "dashboard"
-    ]
+    ],
+    "spot_check_eligibility": {
+      "total_criteria": 15,
+      "playwright_verifiable": 10,
+      "non_verifiable": 5,
+      "non_verifiable_criteria": [
+        "Error message appears near the triggering field",
+        "Submit button is visible without scrolling",
+        "Primary CTA is the most visually prominent element",
+        "Text is readable (sufficient contrast, reasonable size)",
+        "Most important data is above the fold"
+      ]
+    }
   },
   "screenshots": [
     "screenshots/step_1.png",
