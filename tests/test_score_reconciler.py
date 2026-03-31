@@ -3,6 +3,7 @@
 Uses sample fixtures. LLM calls mocked in reconciliation tests.
 Run: pytest tests/test_score_reconciler.py -v
 """
+
 import json
 from pathlib import Path
 
@@ -11,7 +12,9 @@ import pytest
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 NAVIGATOR_OUTPUT = json.loads((FIXTURES / "sample_navigator_output.json").read_text())
 MANIFEST = json.loads((FIXTURES / "sample_manifest.json").read_text())
-NETWORK_VERIFICATION = json.loads((FIXTURES / "sample_network_verifier_output.json").read_text())
+NETWORK_VERIFICATION = json.loads(
+    (FIXTURES / "sample_network_verifier_output.json").read_text()
+)
 
 
 class TestManifestCoverage:
@@ -60,6 +63,7 @@ class TestManifestCoverage:
         assert "expected_pages" in result
         assert "visited" in result
 
+
 class TestVerificationTasks:
     def test_all_pass(self):
         from persona_browser.score_reconciler import _evaluate_verification_tasks
@@ -98,7 +102,12 @@ class TestVerificationTasks:
         manifest_with_tasks = {
             "pages": [],
             "verification_tasks": [
-                {"id": "V1", "type": "data_persistence", "description": "test", "check": "test"}
+                {
+                    "id": "V1",
+                    "type": "data_persistence",
+                    "description": "test",
+                    "check": "test",
+                }
             ],
         }
         result = _evaluate_verification_tasks(nav, manifest_with_tasks)
@@ -120,7 +129,14 @@ class TestClassifyScorerAvailability:
 
         result = _classify_scorer_availability(
             [{"page_id": "reg", "pb_criteria": [], "consumer_criteria": []}],
-            [{"page_id": "reg", "features_detected": [], "pb_criteria": [], "consumer_criteria": []}],
+            [
+                {
+                    "page_id": "reg",
+                    "features_detected": [],
+                    "pb_criteria": [],
+                    "consumer_criteria": [],
+                }
+            ],
         )
         assert result == "both"
 
@@ -138,7 +154,14 @@ class TestClassifyScorerAvailability:
 
         result = _classify_scorer_availability(
             {"error": "Text scorer failed"},
-            [{"page_id": "reg", "features_detected": [], "pb_criteria": [], "consumer_criteria": []}],
+            [
+                {
+                    "page_id": "reg",
+                    "features_detected": [],
+                    "pb_criteria": [],
+                    "consumer_criteria": [],
+                }
+            ],
         )
         assert result == "visual_only"
 
@@ -150,6 +173,7 @@ class TestClassifyScorerAvailability:
             {"error": "Visual failed"},
         )
         assert result == "neither"
+
 
 class TestComputeSummary:
     def test_correct_counts(self):
@@ -163,14 +187,26 @@ class TestComputeSummary:
                     {"reconciled": "PASS", "discrepancy": None},
                     {"reconciled": "FAIL", "discrepancy": None},
                     {"reconciled": "UNKNOWN", "discrepancy": None},
-                    {"reconciled": "PASS", "discrepancy": "Text scorer lacked spatial information."},
-                    {"reconciled": "PASS", "discrepancy": "Only evaluated by visual scorer"},
+                    {
+                        "reconciled": "PASS",
+                        "discrepancy": "Text scorer lacked spatial information.",
+                    },
+                    {
+                        "reconciled": "PASS",
+                        "discrepancy": "Only evaluated by visual scorer",
+                    },
                     {"reconciled": "PASS", "discrepancy": None},
-                    {"reconciled": "PASS", "discrepancy": "Only evaluated by visual scorer"},
+                    {
+                        "reconciled": "PASS",
+                        "discrepancy": "Only evaluated by visual scorer",
+                    },
                 ],
                 "consumer_criteria": [
                     {"reconciled": "PASS", "discrepancy": None},
-                    {"reconciled": "PASS", "discrepancy": "Visual scorer lacked redirect information."},
+                    {
+                        "reconciled": "PASS",
+                        "discrepancy": "Visual scorer lacked redirect information.",
+                    },
                 ],
                 "deal_breakers": [],
             },
@@ -178,8 +214,14 @@ class TestComputeSummary:
                 "id": "dashboard",
                 "pb_criteria": [
                     {"reconciled": "PASS", "discrepancy": None},
-                    {"reconciled": "PASS", "discrepancy": "Text scorer lacked spatial information."},
-                    {"reconciled": "PASS", "discrepancy": "Only evaluated by visual scorer"},
+                    {
+                        "reconciled": "PASS",
+                        "discrepancy": "Text scorer lacked spatial information.",
+                    },
+                    {
+                        "reconciled": "PASS",
+                        "discrepancy": "Only evaluated by visual scorer",
+                    },
                 ],
                 "consumer_criteria": [
                     {"reconciled": "PASS", "discrepancy": None},
@@ -190,12 +232,24 @@ class TestComputeSummary:
             },
         ]
         verification_tasks = [
-            {"id": "V1", "type": "data_persistence", "result": "PASS", "evidence": "..."},
-            {"id": "V3", "type": "auth_persistence", "result": "PASS", "evidence": "..."},
+            {
+                "id": "V1",
+                "type": "data_persistence",
+                "result": "PASS",
+                "evidence": "...",
+            },
+            {
+                "id": "V3",
+                "type": "auth_persistence",
+                "result": "PASS",
+                "evidence": "...",
+            },
             {"id": "V4", "type": "auth_boundary", "result": "PASS", "evidence": "..."},
         ]
 
-        result = _compute_summary(reconciled_pages, NETWORK_VERIFICATION, verification_tasks)
+        result = _compute_summary(
+            reconciled_pages, NETWORK_VERIFICATION, verification_tasks
+        )
 
         assert result["pb_criteria_total"] == 10
         assert result["pb_criteria_passed"] == 8
@@ -211,3 +265,106 @@ class TestComputeSummary:
         assert result["deal_breakers_triggered"] == []
         assert "registration" in result["pages_with_failures"]
         assert "dashboard" in result["pages_clean"]
+
+
+class TestAssembleFinalReport:
+    def test_version_is_set(self):
+        from persona_browser.score_reconciler import _assemble_final_report
+
+        result = _assemble_final_report(
+            navigator_output={
+                "status": "DONE",
+                "persona": "test",
+                "url": "http://test",
+            },
+            reconciled_pages=[],
+            network_verification={"deal_breakers": [], "issues": []},
+            manifest_coverage={
+                "expected_pages": [],
+                "visited": [],
+                "not_visited": [],
+                "unexpected_pages": [],
+            },
+            verification_tasks=[],
+            elapsed_seconds=10.5,
+        )
+        assert result["version"] == "1.1"
+        assert result["elapsed_seconds"] == 10.5
+
+    def test_source_tag_added_to_network_verification(self):
+        from persona_browser.score_reconciler import _assemble_final_report
+
+        result = _assemble_final_report(
+            navigator_output={
+                "status": "DONE",
+                "persona": "test",
+                "url": "http://test",
+            },
+            reconciled_pages=[],
+            network_verification={
+                "deal_breakers": [],
+                "issues": [],
+                "api_calls_total": 3,
+            },
+            manifest_coverage={
+                "expected_pages": [],
+                "visited": [],
+                "not_visited": [],
+                "unexpected_pages": [],
+            },
+            verification_tasks=[],
+            elapsed_seconds=5.0,
+        )
+        assert "_source" in result["network_verification"]
+        assert "Network Verifier" in result["network_verification"]["_source"]
+        assert result["network_verification"]["api_calls_total"] == 3
+
+    def test_optional_fields_conditional(self):
+        from persona_browser.score_reconciler import _assemble_final_report
+
+        result_without = _assemble_final_report(
+            navigator_output={
+                "status": "DONE",
+                "persona": "test",
+                "url": "http://test",
+            },
+            reconciled_pages=[],
+            network_verification={"deal_breakers": [], "issues": []},
+            manifest_coverage={
+                "expected_pages": [],
+                "visited": [],
+                "not_visited": [],
+                "unexpected_pages": [],
+            },
+            verification_tasks=[],
+            elapsed_seconds=5.0,
+        )
+        assert "scope" not in result_without
+        assert "agent_result" not in result_without
+        assert "experience" not in result_without
+        assert "screenshots" not in result_without
+        result_with = _assemble_final_report(
+            navigator_output={
+                "status": "DONE",
+                "persona": "test",
+                "url": "http://test",
+                "scope": "gate",
+                "agent_result": "Test narrative",
+                "experience": {"satisfaction": 8},
+                "screenshots": ["ss1.png"],
+            },
+            reconciled_pages=[],
+            network_verification={"deal_breakers": [], "issues": []},
+            manifest_coverage={
+                "expected_pages": [],
+                "visited": [],
+                "not_visited": [],
+                "unexpected_pages": [],
+            },
+            verification_tasks=[],
+            elapsed_seconds=5.0,
+        )
+        assert result_with["scope"] == "gate"
+        assert result_with["agent_result"] == "Test narrative"
+        assert result_with["experience"] == {"satisfaction": 8}
+        assert result_with["screenshots"] == ["ss1.png"]
