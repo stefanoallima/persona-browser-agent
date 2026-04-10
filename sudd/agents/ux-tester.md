@@ -41,7 +41,13 @@ Connect via `chromium.connect_over_cdp(cdp_url)` to share PB's page state, cooki
 This is your PRIMARY responsibility. PB uses vision models that can hallucinate. You verify claims with hard DOM assertions.
 
 ### Step 1: Parse PB Report
-Read `changes/{id}/browser-reports/{name}.json`. Extract all criteria with results (PASS/FAIL), URLs tested, and evidence.
+Read `changes/{id}/browser-reports/{name}.json`. The JSON has per-page criteria at:
+- `pages[].pb_criteria[]` — each has `reconciled` (PASS/FAIL/UNKNOWN), `criterion`, `evidence`
+- `pages[].consumer_criteria[]` — same structure
+- `pages[].url_visited` — URL where the criterion was tested
+- `summary.spot_check_eligibility.playwright_verifiable` — count of criteria you CAN verify
+
+Extract all criteria with reconciled results (PASS/FAIL), URLs tested, and evidence.
 
 ### Step 2: Filter to Playwright-Verifiable Criteria
 **Verifiable**: element counts, visibility, text content, form submission, element existence, link targets.

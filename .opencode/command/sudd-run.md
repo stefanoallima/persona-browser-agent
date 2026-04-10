@@ -123,6 +123,69 @@ Dispatch(agent=persona-researcher, scope=change): Deep-research change consumers
   Write to: sudd/changes/active/{id}/personas/
 ```
 
+### Step 3b: Persona Early Validation (v3.7 — catch shallow personas before coding)
+
+**PREREQUISITE**: Step 3 MUST complete first (personas written to disk).
+Step 3b is SEQUENTIAL after Step 3, never parallel.
+
+Personas are the foundation of everything SUDD does. If they're vague, every
+subsequent step (design, code, testing, gate) builds on a bad foundation.
+Validate them NOW, before any code is written.
+
+```
+Ensure log.md exists (create if missing):
+  If sudd/changes/active/{id}/log.md does NOT exist:
+    Create it with header: "# Log: {change-id}\n\n"
+
+Verify personas exist: ls sudd/changes/active/{id}/personas/*.md
+If no personas found: SKIP Step 3b (Step 4 planning will still work, gate will catch gaps later)
+
+FOR EACH persona in sudd/changes/active/{id}/personas/:
+  Dispatch(agent=persona-validator, mode=persona-quality):
+
+    Read the persona file. Check ALL of these:
+
+    REQUIRED (fail if missing):
+    □ ## Identity section with: name, role, tech comfort, context
+    □ ## Objectives section with at least 1 concrete objective
+    □ Each objective has specific success criteria (not vague "works well")
+    □ ## Deal-Breakers section with at least 1 deal-breaker
+
+    QUALITY (flag if weak):
+    □ Objectives are MEASURABLE (can be verified by browser testing)
+    □ Deal-breakers are SPECIFIC (not "bad UX" — what specifically?)
+    □ Identity has enough detail for an LLM to act AS this person
+    □ No placeholder text ("TBD", "TODO", "fill in later")
+    □ ## Form Data section exists if persona will fill forms
+
+    Result:
+      PASS → persona is ready for design and coding
+      WEAK → specific feedback on what to strengthen
+      FAIL → missing required sections, cannot proceed
+
+  If ANY persona is FAIL:
+    Dispatch(agent=persona-researcher, mode=enrich):
+      Input: the persona file path AND the validation output from above
+      (pass the "Missing sections" and "Suggested enrichments" text from
+       persona-validator's output directly in the dispatch prompt)
+      Re-research the persona, fill missing sections, write updated file
+    Re-validate (max 2 enrichment attempts)
+
+  If ANY persona is WEAK after enrichment:
+    Log warning but continue — weak personas produce weak gates
+
+  OUTPUT: Write results to log.md under ## Persona Early Validation:
+    ### {persona_name}: PASS | WEAK | FAIL
+    {validation details}
+  
+  Update state.json: personas_validated = true
+```
+
+This step typically takes < 30 seconds. It prevents hours of wasted coding
+against poorly-defined personas.
+
+---
+
 ### Step 4: Planning
 <!-- Phase transition: inception → planning (valid) -->
 ```
@@ -153,10 +216,118 @@ Dispatch(agent=micro-persona-generator):
   Read: tasks.md, design.md, specs.md, codebase
   Write: sudd/changes/active/{id}/tasks/{task-id}/micro-persona.md (one per task)
   Process in reverse dependency order (leaf tasks first)
-
-Update: state.json phase = "build"
-<!-- Phase transition: planning → build (valid) -->
 ```
+
+---
+
+### Step 4b: Architecture Review Loop (v3.7 — catch design flaws before coding)
+
+Before writing any code, the design must survive peer review. This catches
+flawed architecture BEFORE burning retries on implementation.
+
+```
+ARCHITECTURE REVIEW (max 2 rounds):
+
+  Round 1:
+    Dispatch(agent=peer-reviewer, mode=design-review):
+      Input: design.md, specs.md, tasks.md, personas/*.md, codebase (existing patterns)
+      (The agent's design-review mode in peer-reviewer.md defines the full
+       10-point checklist. Do NOT duplicate the checklist here — the agent
+       file is the single source of truth for what to check.)
+
+      Output: ## Architecture Review section in log.md
+        - APPROVED: design is ready for implementation
+        - REVISE: specific issues with suggested fixes (max 5 items)
+
+  If REVISE:
+    Dispatch(agent=architect, mode=revision):
+      Input: design.md, log.md ## Architecture Review feedback
+      Action: revise design.md and tasks.md to address feedback
+      Note: do NOT add scope — only fix the identified issues
+
+    Round 2:
+      Dispatch(agent=peer-reviewer, mode=design-review):
+        Re-review revised design against original feedback
+        Output: APPROVED or REVISE
+
+    If still REVISE after Round 2:
+      Log: "⚠ Architecture review concerns remain. Proceeding with noted risks."
+      Append unresolved concerns to log.md ## Known Risks
+      Continue to Step 4c (don't block forever on design perfection)
+
+  If APPROVED:
+    Log: "✓ Architecture review passed"
+
+  Update state.json: architecture_reviewed = true
+
+  OUTPUT: All results go to log.md under ## Architecture Review:
+    ### Round 1: APPROVED | REVISE
+    {reviewer output}
+    ### Round 2 (if needed): APPROVED | REVISE
+    {reviewer output}
+    ### Known Risks (if unresolved after 2 rounds)
+    {unresolved concerns}
+```
+
+---
+
+### Step 4c: Design-Gate (v3.7 — lightweight persona check before coding)
+
+The design-gate is a FAST persona check on the design itself (not code).
+It catches misalignment between what personas need and what the design provides.
+
+```
+DESIGN-GATE:
+
+  FOR EACH persona in sudd/changes/active/{id}/personas/:
+    Dispatch(agent=persona-validator, mode=design-gate):
+      Input: persona file, design.md, specs.md, tasks.md
+
+      You are this persona. Walk through the DESIGN (not code — it doesn't exist yet).
+
+      For each of your objectives:
+        1. Is there a page/route/component designed for this objective?
+        2. Is there a task in tasks.md that implements this objective?
+        3. Does the API design support the data this objective needs?
+        4. Are your deal-breakers addressed in the design?
+        5. Would you be able to accomplish this objective with this design?
+
+      Score: 0-100 (design readiness, not code quality)
+        90+   → Design serves this persona well
+        70-89 → Design has gaps but can proceed (log gaps)
+        <70   → Design fundamentally misses this persona's needs
+
+      Output: ## Design-Gate section in log.md
+
+  If ANY persona < 70:
+    → Dispatch(agent=architect, mode=revision) with design-gate gaps
+    → If architect revised tasks.md:
+        Regenerate micro-personas for changed tasks:
+        Dispatch(agent=micro-persona-generator): only for tasks that changed
+    → Re-run design-gate (max 1 revision — don't loop forever)
+
+  If ALL personas >= 70:
+    → Log: "✓ Design-gate passed (min: {score}/100)"
+    → Proceed to build
+
+  OUTPUT: Write to log.md under ## Design-Gate:
+    ### {persona_name}: {score}/100 — PASS | FAIL
+    {objective coverage table}
+    {gaps found}
+
+  Update state.json:
+    design_gate_passed = true
+    design_gate_score = {min score across personas}
+    phase = "build"
+  <!-- Phase transition: planning → build (valid) -->
+```
+
+**IMPORTANT**: If Step 4b or 4c caused architect to revise tasks.md, micro-personas
+for affected tasks MUST be regenerated before proceeding to build. Stale
+micro-personas that don't match the revised design will cause false gate failures.
+
+This entire step (3b + 4b + 4c) adds ~2-5 minutes to the planning phase
+but saves hours of wasted coding against bad designs or weak personas.
 
 ### Step 5: Build Loop
 
@@ -347,21 +518,26 @@ VALIDATION LOOP:
 
   6b. REVIEW PHASE:
       Dispatch(agent=peer-reviewer): Final code review
-      Dispatch(agent=ux-tester): If UI components exist, browser test
 
-  6c. GATE PHASE (v3.1 — parallel dispatch):
-      PARALLEL (dispatch simultaneously):
-        Dispatch(agent=persona-validator):
-          Input: change persona + micro-persona results as evidence + macro-wiring report
-          Target: 98/100 EXEMPLARY
-        Dispatch(agent=persona-validator):
-          Input: repo persona + change persona results
-          Target: 98/100 EXEMPLARY
-        [If UI] Dispatch(agent=ux-tester):
-          Input: running UI, persona objectives, UI spec
+  6c. GATE PHASE (v3.4 — FULL gate.md, including browser testing):
 
-      WAIT for all, then:
-        Critical assessment (mandatory second pass, see gate.md STEP 3b)
+      **EXECUTE THE FULL gate.md WORKFLOW. DO NOT USE A SIMPLIFIED VERSION.**
+      The gate includes browser testing with persona-browser-agent — this is mandatory.
+
+      Follow gate.md steps IN ORDER:
+        Step 0:  Macro-wiring check
+        Step 1:  Identify consumers
+        Step 2a: Code intelligence extraction (code-analyzer pipeline + adversarial rubric)
+        Step 2b: BROWSER TESTING — run persona-test for each persona
+                 MANDATORY when personas exist AND a dev_server.url or deployed app is available.
+                 This launches a real browser, navigates the app AS each persona,
+                 and produces JSON reports + screenshots. DO NOT SKIP THIS STEP.
+                 DO NOT substitute it with LLM-based "persona simulation".
+        Step 2c: Persona-validator reads the browser reports (not code — the actual reports)
+        Step 2d: UX-tester spot-checks browser reports against screenshots
+        Step 2e: Unified scoring with formula from sudd.yaml
+        Step 3:  Aggregate scores
+        Step 3b: Critical assessment (mandatory second pass)
 
       If ALL consumers EXEMPLARY (>= 98/100):
         → GATE PASSED
@@ -369,6 +545,9 @@ VALIDATION LOOP:
       Else (ANY consumer below EXEMPLARY):
         → Log feedback to log.md (## Accumulated Feedback)
         → retry_count++ (per-task)
+        → If gate feedback indicates DESIGN FLAW (not just code bug):
+            Clear state.json: design_gate_passed = false
+            (Next retry or resume will re-run design-gate before coding)
         → If retry < 8: escalate tier per ladder, GO BACK TO Step 5c (re-apply with feedback)
         → If retry >= 8: mark STUCK, continue to 6d
 
@@ -441,10 +620,19 @@ If no active change:
 ```
 Switch on phase:
   case "inception": → run planning   <!-- Phase transition: inception → planning (valid) -->
-  case "planning":  → continue design <!-- Phase transition: planning → build (valid) -->
+  case "planning":
+    → Check state.json flags:
+      If personas_validated != true AND personas exist → run Step 3b
+      If architecture_reviewed != true AND design.md exists → run Step 4b
+      If design_gate_passed != true AND design.md + personas exist → run Step 4c
+    → Then proceed to build
   case "build":     → continue tasks  <!-- Phase transition: build → validate (valid) -->
   case "validate":  → run validation  <!-- Phase transition: validate → complete (valid) -->
   case "complete":  → archive
+
+Note: State flags (personas_validated, architecture_reviewed, design_gate_passed)
+prevent re-running loops that already passed on resume. If a loop was interrupted,
+its flag won't be set and the loop re-runs safely.
 ```
 
 ### Step 3: Build Loop
@@ -535,3 +723,6 @@ Output:
 11. **Worktree mode only**: cleanup is mandatory — always remove worktrees after merge or conflict. Rebase before merge. Revert on post-merge validation failure
 12. **Per-task validation before proceeding** — validation squad (contract → wiring → integration → micro-persona) runs after every task. No task is "done" until PASS (100/100).
 13. **Context window management** — validation squad agents are lightweight (narrow scope). After each task, compress validation history to one line in state.json. If context window reaches 80% capacity, save state and continue in fresh session.
+14. **Never skip persona early validation** (Step 3b) — weak personas produce weak gates. Validate BEFORE design.
+15. **Never skip architecture review** (Step 4b) — catch design flaws before burning retries on bad architecture.
+16. **Never skip design-gate** (Step 4c) — if the design doesn't serve the personas, coding is wasted effort.

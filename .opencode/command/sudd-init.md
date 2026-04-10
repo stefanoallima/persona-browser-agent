@@ -273,7 +273,38 @@ The CLI agent is the orchestrator. Agents are markdown instructions. Code is onl
 
 ---
 
-## Step 8: Initialize git (if not already)
+## Step 8: Install persona-browser-agent (REQUIRED for browser testing)
+
+persona-browser-agent provides real browser-based persona testing. Without it, gate
+validation falls back to static code analysis which misses real UX issues.
+
+```bash
+# Check if already installed:
+persona-test --help 2>/dev/null && echo "INSTALLED" || echo "NOT_INSTALLED"
+
+# If NOT_INSTALLED:
+# Option 1: Install from sibling repo (if cloned alongside this project)
+pip install -e ../persona-browser-agent && playwright install chromium
+
+# Option 2: Install from git
+pip install git+https://github.com/stefanoallima/persona-browser-agent.git
+playwright install chromium
+
+# Verify:
+persona-test --help
+# Should show: "Persona Browser Agent — AI-driven browser testing as simulated personas"
+
+# Set API key for browser testing LLM (Gemini Flash via OpenRouter):
+# Add to your shell profile (~/.bashrc, ~/.zshrc, or Windows env vars):
+export OPENROUTER_API_KEY="sk-or-..."
+```
+
+If the Go CLI (`sudd init`) is used, it will auto-detect and install persona-browser-agent
+from a sibling directory automatically.
+
+---
+
+## Step 9: Initialize git (if not already)
 
 If `.git/` doesn't exist: `git init`
 
@@ -284,7 +315,7 @@ memory/context-cache/
 
 ---
 
-## Step 9: Verify and report
+## Step 10: Verify and report
 
 Count files created. Print:
 

@@ -135,3 +135,35 @@ When coder raises a CONTRACT_REVISION:
 4. **If retrying:** Address the specific failure feedback. Don't repeat the same approach.
 5. **Critique honestly.** When reviewing your own design, find REAL weaknesses. Don't softball it.
 6. **Frontend design guidance.** When designing UI components, note that the coder has access to the `ui-ux-pro-max` skill for design system generation. Specify the design style/mood in your design.md (e.g., "minimalist SaaS", "bold e-commerce") so the coder can query appropriate recommendations.
+
+---
+
+## Mode: revision (v3.7 — targeted design fix)
+
+**Invoked by**: run.md Step 4b (after architecture review) or Step 4c (after design-gate).
+**Purpose**: Fix SPECIFIC issues in design.md and tasks.md. NOT a full re-design.
+**Tier**: mid (targeted fix, not full architecture)
+
+### Input
+- design.md, tasks.md (current versions)
+- log.md `## Architecture Review` or `## Design-Gate` section (the feedback to address)
+
+### Rules for Revision
+1. **Read the feedback first.** Fix ONLY the issues listed. Do not add scope.
+2. **Do not re-architect.** If the review says "missing API endpoint for profile page", add that endpoint. Do not redesign the auth system.
+3. **Update tasks.md** if the design revision adds new work or changes task dependencies.
+4. **Mark revisions.** Add `<!-- Revised: {issue description} -->` comments near changed sections so the re-reviewer can find them.
+5. **Preserve existing design.** Do not delete or rewrite sections that were not flagged.
+
+### Output
+- Updated design.md (with revision markers)
+- Updated tasks.md (if new tasks needed)
+- Brief note in log.md:
+  ```markdown
+  ## Architect Revision: {N issues addressed}
+  Tasks changed: [T03, T07]  ← list task IDs whose specs changed, or "none"
+  Tasks added: [T09]         ← new tasks added, or "none"
+  Tasks removed: []          ← tasks removed, or "none"
+  ```
+  The orchestrator reads the "Tasks changed/added" lines to know which
+  micro-personas need regeneration. If "none", no regeneration needed.

@@ -85,3 +85,53 @@ Use named rubric levels from `sudd/standards.md` → Scoring. Pick level first, 
 2. **Prioritize persona value.** A beautiful implementation that doesn't serve the persona is a FAIL.
 3. **Don't block on style.** Only flag correctness, security, or persona value.
 4. **REJECT is rare.** Only for fundamental design flaws.
+
+---
+
+## Mode: design-review (v3.7 — architecture review before coding)
+
+**Invoked by**: run.md Step 4b, after architect creates design.md but before any code.
+**Purpose**: Review the DESIGN for completeness and persona alignment. No code exists yet.
+**Tier**: mid (design reasoning, not code analysis)
+
+### Input
+- design.md, specs.md, tasks.md, personas/*.md, existing codebase (for patterns)
+
+### Checklist
+
+Review the design against ALL of these:
+
+| # | Check | What to look for |
+|---|-------|-----------------|
+| 1 | Persona alignment | Does design serve ALL personas' objectives? Any persona ignored? |
+| 2 | API contracts | Are endpoints complete with request/response schemas? Missing endpoints? |
+| 3 | Data model | Is the data model sufficient for all features? Missing fields/tables? |
+| 4 | Routes/pages | Are there pages for every persona objective? Any missing navigation? |
+| 5 | Task coverage | Does tasks.md cover everything in design.md? Missing implementation tasks? |
+| 6 | Task dependencies | Are dependencies correctly ordered? Can tasks be parallelized? |
+| 7 | Error handling | Is error handling designed? Or just happy path? |
+| 8 | Auth flow | Does auth cover all persona scenarios (login, register, protected pages)? |
+| 9 | Testability | Are acceptance criteria verifiable by automated tests? (from QA notes) |
+| 10 | Existing patterns | Does design follow existing codebase patterns or deviate without reason? |
+
+### Output
+
+```markdown
+## Architecture Review
+
+### Verdict: APPROVED | REVISE
+### Issues Found (max 5, priority order)
+1. **[CRITICAL]** {issue} — {why it matters for personas} — Fix: {suggestion}
+2. **[MAJOR]** {issue} — Fix: {suggestion}
+...
+
+### What's Good
+- {strength 1}
+- {strength 2}
+
+### Summary
+{1-2 sentences: overall design quality assessment}
+```
+
+If REVISE: list no more than 5 specific, actionable issues. The architect will fix ONLY these.
+If APPROVED: still note strengths and any minor observations.

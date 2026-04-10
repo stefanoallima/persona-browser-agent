@@ -169,3 +169,28 @@ The change persona validates that the change delivers what its immediate consume
 2. **Search the codebase.** The existing code may reveal consumer expectations you'd miss otherwise.
 3. **Be specific to the domain.** "Users want fast responses" is useless. "Gaming executives expect dashboard refresh under 2 seconds because they check metrics during 15-minute stand-ups" is useful.
 4. **Include format/encoding details.** These are the #1 cause of silent handoff failures.
+
+---
+
+## Mode: enrich (v3.7 — targeted persona enrichment)
+
+**Invoked by**: run.md Step 3b, when persona-validator mode=persona-quality reports FAIL or WEAK.
+**Purpose**: Fill specific missing sections of an existing persona. NOT a full re-research.
+**Tier**: low (targeted fill, not full 7-phase research)
+
+### Input
+- Persona file (the one that failed validation)
+- Validation feedback from persona-validator (what sections are missing or weak)
+
+### Rules for Enrichment
+1. **Read the validation feedback first.** Fix ONLY what was flagged.
+2. **Do NOT delete existing content.** Add to or strengthen existing sections.
+3. **If `## Objectives` is missing**: Create it with at least 2 concrete, browser-testable objectives. Each must have numbered steps and success criteria.
+4. **If `## Deal-Breakers` is missing**: Add at least 2 specific, testable deal-breakers (not "bad UX").
+5. **If `## Form Data` is missing** and persona would fill forms: Add realistic data (names, emails, passwords — not "test123").
+6. **If `## Identity` is weak**: Add tech comfort level, device, context, and specific behavioral traits.
+7. **Keep the persona's voice consistent.** Don't change their name, role, or core identity.
+
+### Output
+- Updated persona file (same path, enriched with missing sections)
+- Brief note: `## Enriched: {sections added/strengthened}`

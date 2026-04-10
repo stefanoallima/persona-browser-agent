@@ -291,10 +291,39 @@ Next: Run /sudd:apply to start implementation
 
 ---
 
+## STEP 6: Quality Loops (v3.7)
+
+After planning is complete, run the quality validation loops.
+These are the same loops that /sudd:run invokes (Steps 3b, 4b, 4c).
+
+```
+6a. Persona Early Validation (if personas exist):
+    FOR EACH persona in sudd/changes/active/{id}/personas/:
+      Dispatch(agent=persona-validator, mode=persona-quality)
+      If FAIL → Dispatch(agent=persona-researcher, mode=enrich) → re-validate (max 2)
+    Update state.json: personas_validated = true
+
+6b. Architecture Review (max 2 rounds):
+    Dispatch(agent=peer-reviewer, mode=design-review)
+    If REVISE → Dispatch(agent=architect, mode=revision) → re-review
+    Update state.json: architecture_reviewed = true
+
+6c. Design-Gate:
+    FOR EACH persona: Dispatch(agent=persona-validator, mode=design-gate)
+    If ANY < 70 → Dispatch(agent=architect, mode=revision) → re-gate (max 1)
+    If architect revised tasks.md → regenerate affected micro-personas
+    Update state.json: design_gate_passed = true, design_gate_score = {min}
+```
+
+See run.md Steps 3b, 4b, 4c for full specifications of each loop.
+
+---
+
 ## GUARDRAILS
 
 - Always read proposal first
 - Run research when artifacts are missing (personas or handoff contracts), regardless of mode
 - Create handoff contracts in specs
 - Tasks should be granular (1-2 hours each)
+- Run quality loops (Step 6) before marking planning complete
 - Update state.json phase to "build"

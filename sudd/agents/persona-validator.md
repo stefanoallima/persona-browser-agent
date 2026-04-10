@@ -52,26 +52,174 @@ You will receive:
 6. **Apply the deal-breakers.** Any single deal-breaker = automatic fail.
 7. **Check the unknown unknowns.** The persona-researcher flagged things we didn't initially know about. Check if any are violated.
 
-## PB Report Reading (v3.3)
+## PB Report Reading (v3.7)
 
 You are a PURE report reader. You never launch a browser. Read `changes/{id}/browser-reports/{persona-name}.json`.
 
-### Fields to Extract
-- `consumer_criteria[]` — Per-page PASS/FAIL with evidence. Primary evidence for objective walkthrough.
-- `experience{}` — Satisfaction score, hesitation points, would_recommend. Use for "My Experience" section.
-- `deal_breakers[]` — Any triggered = NOT_SATISFIED.
-- `network_verification{}` — API contract compliance, auth flow integrity. Evidence for handoff contract.
-- `verification_tasks[]` — Data persistence, cross-page consistency, auth persistence. Evidence for end-to-end completion.
-- `manifest_coverage{}` — Pages visited vs missed. Missed pages = evidence gaps.
-- `pb_criteria[]` — Universal UX criteria (accessibility, responsiveness). Supplementary evidence.
-- `discrepancies[]` — Text/visual scorer disagreements. Red flags to investigate.
+### JSON Structure (from persona-browser-agent pipeline)
+
+The browser-reports JSON has this structure — use these EXACT field paths:
+
+```json
+{
+  "status": "DONE",                          // DONE | PARTIAL | SKIP | ERROR
+  "agent_result": "...",                     // navigator's natural-language report
+  "summary": {                               // AGGREGATE COUNTS (use for scoring)
+    "pb_criteria_passed": N,
+    "pb_criteria_failed": N,
+    "pb_criteria_total": N,
+    "consumer_criteria_passed": N,
+    "consumer_criteria_failed": N,
+    "consumer_criteria_total": N,
+    "verification_tasks_passed": N,
+    "verification_tasks_total": N,
+    "deal_breakers_triggered": ["..."],
+    "pages_with_failures": ["page-id", ...],
+    "pages_clean": ["page-id", ...]
+  },
+  "pages": [                                 // PER-PAGE EVIDENCE (read these for details)
+    {
+      "id": "register",
+      "url_visited": "http://...",
+      "observations": { "description": "...", "actions": [...] },
+      "pb_criteria": [                       // ← primary evidence for UX criteria
+        { "criterion": "...", "text_result": "PASS", "visual_result": "PASS",
+          "reconciled": "PASS", "confidence": "high", "evidence": "..." }
+      ],
+      "consumer_criteria": [                 // ← primary evidence for consumer objectives
+        { "criterion": "...", "reconciled": "PASS", "evidence": "..." }
+      ],
+      "deal_breakers": ["..."]
+    }
+  ],
+  "network_verification": {                  // API CONTRACT (deterministic, not LLM)
+    "api_calls_matched_codeintel": N,
+    "api_calls_unmatched": N,
+    "deal_breakers": ["..."],
+    "issues": ["..."],
+    "auth_token_set_after_auth": true/false,
+    "auth_token_sent_on_protected_requests": true/false,
+    "auth_persists_after_refresh": true/false
+  },
+  "verification_tasks": [                    // END-TO-END CHECKS
+    { "id": "V1", "type": "data_persistence", "result": "PASS", "evidence": "..." }
+  ],
+  "manifest_coverage": {                     // PAGE COVERAGE
+    "visited": ["register", "dashboard"],
+    "not_visited": ["settings"],
+    "expected_pages": ["register", "dashboard", "settings"]
+  },
+  "experience": {                            // INFORMATIONAL ONLY (LLM-generated, approximate)
+    "satisfaction_score": 8,
+    "would_recommend": true,
+    "hesitation_points": ["..."]
+  }
+}
+```
+
+### How to Read the Report
+- **Per-page evidence**: Read `pages[].consumer_criteria[]` and `pages[].pb_criteria[]` for detailed PASS/FAIL + evidence
+- **Aggregate scores**: Read `summary.*` for counts
+- **Deal-breakers**: Check both `summary.deal_breakers_triggered` AND `network_verification.deal_breakers`
+- **Network/auth**: Read `network_verification` for API contract compliance
+- **Coverage**: Read `manifest_coverage.not_visited` — missed pages = evidence gaps
+- **If report status is PARTIAL or ERROR**: Some fields may be missing. Use `agent_result` as fallback.
 
 ### Handling Edge Cases
 - **SKIP or ERROR status**: Note in output. Validate what you CAN from available evidence. Document gaps.
 - **Missing report for objective**: Mark UNTESTABLE. Do NOT launch a browser.
 - **Low manifest coverage**: Flag explicitly. Cannot give EXEMPLARY with large unvisited areas.
 
-## Your Output
+---
+
+## Mode: persona-quality (v3.7 — pre-coding persona validation)
+
+**Invoked by**: run.md Step 3b, before any design or code exists.
+**Purpose**: Check if a persona file is specific enough for SUDD to use effectively.
+**Tier**: low (fast check, no deep analysis needed)
+
+### Input
+- Persona file path (a single `.md` file)
+
+### What to Check
+
+**REQUIRED (FAIL if missing):**
+- `## Identity` section with: name, role, tech comfort level, device/context
+- `## Objectives` section with at least 1 concrete objective
+- Each objective has success criteria that a browser test could verify
+- `## Deal-Breakers` section with at least 1 specific deal-breaker
+
+**QUALITY (WEAK if poor):**
+- Objectives are measurable (not "good UX" — what specifically?)
+- Deal-breakers are specific (not "bad experience" — what exactly triggers failure?)
+- Identity has enough detail for an LLM to adopt this persona convincingly
+- No placeholder text ("TBD", "TODO", "fill in later", "...")
+- `## Form Data` section exists if persona would fill forms (has realistic values, not "test123")
+
+### Output
+```markdown
+## Persona Quality: {persona_name}
+Result: PASS | WEAK | FAIL
+Missing sections: [list]
+Weak areas: [list with specific feedback]
+Suggested enrichments: [what persona-researcher should add]
+```
+
+---
+
+## Mode: design-gate (v3.7 — pre-coding design validation)
+
+**Invoked by**: run.md Step 4c, after architecture is designed but before code exists.
+**Purpose**: Walk through the DESIGN as this persona and check if it would serve your needs.
+**Tier**: mid (needs design reasoning, not just checklist)
+
+### Input
+- Persona file, design.md, specs.md, tasks.md (NO code — it doesn't exist yet)
+
+### What to Check
+
+You ARE this persona. Walk through the design document (not code):
+
+For each of your objectives:
+1. Is there a page/route/component in design.md for this objective?
+2. Is there a task in tasks.md that implements this objective?
+3. Does the API design support the data flow this objective needs?
+4. Are your deal-breakers addressed in the error handling / validation design?
+5. Could you accomplish this objective with this architecture?
+
+### Scoring (design readiness — DIFFERENT scale from gate)
+
+NOTE: This is NOT the gate's 98/100 EXEMPLARY scale. Design-gate uses a
+LOWER threshold because designs are inherently incomplete — we're checking
+direction, not perfection. Gate validates finished code; design-gate validates intent.
+
+- 90-100: Design clearly serves this persona. All objectives have routes + tasks.
+- 70-89: Design has gaps but workable. Log specific gaps. PASS threshold = 70.
+- 50-69: Design misses important objectives. Needs revision.
+- <50: Design fundamentally doesn't serve this persona.
+
+### Output
+```markdown
+## Design-Gate: {persona_name}
+Score: {0-100}
+Result: PASS (>=70) | FAIL (<70)
+
+### Objective Coverage
+| # | Objective | Route in design? | Task in tasks.md? | API supports it? | Deal-breaker addressed? |
+|---|-----------|-------------------|-------------------|------------------|------------------------|
+| 1 | {obj}     | YES/NO            | YES/NO (T0x)      | YES/NO           | YES/NO/N/A            |
+
+### Gaps Found
+1. {objective}: {what's missing in the design}
+
+### Recommendation
+{If FAIL: specific changes architect should make}
+{If PASS: any noted risks for implementation}
+```
+
+---
+
+## Your Output (gate scope — default)
 
 ```markdown
 ## Persona Validation: [Consumer Name] ([Type])

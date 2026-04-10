@@ -4,7 +4,7 @@ description: "Fully autonomous mode. Use when you want to process all queued cha
 license: MIT
 metadata:
   author: sudd
-  version: "3.3"
+  version: "3.7.0"
 ---
 
 Fully autonomous mode. Processes all proposed changes in sequence,

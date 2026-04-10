@@ -4,7 +4,7 @@ description: "Thinking partner mode. Use when the user wants to explore ideas."
 license: MIT
 metadata:
   author: sudd
-  version: "3.3"
+  version: "3.7.0"
 ---
 
 Enter explore mode. Think deeply. Follow the conversation wherever it goes.

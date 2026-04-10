@@ -4,7 +4,7 @@ description: "Archive completed or stuck change. Use when implementation is comp
 license: MIT
 metadata:
   author: sudd
-  version: "3.3"
+  version: "3.7.0"
 ---
 
 Archive the change. Update memory. Clean up.
@@ -144,6 +144,13 @@ If Step 2b promoted new patterns:
 ```bash
 mv sudd/changes/active/{id} sudd/changes/archive/{id}_DONE
 ```
+
+**PRESERVE these artifacts** (moved with the directory — do NOT delete):
+- `personas/` — persona research (needed by Go-level browser test verification)
+- `browser-reports/` — browser testing evidence (verified by runner.go)
+- `screenshots/` — visual evidence
+- `codeintel.json`, `manifest.json`, `rubric.md` — code intelligence
+- `log.md` — full execution history
 
 Create summary: `sudd/changes/archive/{id}_DONE/SUMMARY.md`
 ```markdown
