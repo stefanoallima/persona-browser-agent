@@ -10,8 +10,12 @@ codeintel.  Does NOT see screenshots.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +96,22 @@ async def _score_page(
     """Score a single page and return a dict (without page_id — caller sets it)."""
     prompt = _build_prompt(page, rubric_text, pb_rubric_text, codeintel, experience)
 
-    response = await llm.ainvoke(prompt)
+    # Retry with exponential backoff for transient LLM failures
+    last_error = None
+    for attempt in range(3):
+        try:
+            response = await llm.ainvoke(prompt)
+            break
+        except Exception as e:
+            last_error = e
+            if attempt < 2:
+                wait = 2 ** (attempt + 1)
+                logger.warning("Text scorer LLM call failed (attempt %d/3), retrying in %ds: %s", attempt + 1, wait, e)
+                await asyncio.sleep(wait)
+    else:
+        logger.error("Text scorer LLM call failed after 3 attempts: %s", last_error)
+        raise last_error
+
     raw_text: str = response.content if hasattr(response, "content") else str(response)
 
     parsed = _parse_llm_response(raw_text)

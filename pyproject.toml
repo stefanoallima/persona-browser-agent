@@ -9,7 +9,7 @@ description = "AI-driven browser testing as simulated personas. Uses browser-use
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "browser-use>=0.2.0",
+    "browser-use>=0.2.0,<1.0.0",
     "langchain-openai>=0.3.0",
     "pyyaml>=6.0",
     "pydantic>=2.0",

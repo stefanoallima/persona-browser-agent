@@ -559,15 +559,26 @@ def _fallback_page(
                 "discrepancy": None,
             })
         else:
+            # Preserve the actual disagreement details for debugging
+            t_r = t_result or "UNKNOWN"
+            v_r = v_result or "UNKNOWN"
+            if t_result and v_result and t_result != v_result:
+                discrepancy_detail = f"text={t_result}, visual={v_result} (LLM reconciliation unavailable)"
+            elif t_result and not v_result:
+                discrepancy_detail = f"text={t_result}, visual=missing (single-scorer, LLM unavailable)"
+            elif v_result and not t_result:
+                discrepancy_detail = f"text=missing, visual={v_result} (single-scorer, LLM unavailable)"
+            else:
+                discrepancy_detail = "LLM reconciliation unavailable"
             pb_criteria.append({
                 "feature": ref.get("feature", "unknown"),
                 "criterion": ref.get("criterion", ""),
-                "text_result": t_result or "UNKNOWN",
-                "visual_result": v_result or "UNKNOWN",
+                "text_result": t_r,
+                "visual_result": v_r,
                 "reconciled": "UNKNOWN",
                 "confidence": "low",
-                "evidence": "Fallback: LLM reconciliation failed, scorers disagreed or unavailable",
-                "discrepancy": "LLM reconciliation unavailable",
+                "evidence": f"Fallback: {discrepancy_detail}",
+                "discrepancy": discrepancy_detail,
             })
 
     consumer_criteria: list[dict] = []
@@ -589,14 +600,24 @@ def _fallback_page(
                 "discrepancy": None,
             })
         else:
+            t_r = t_result or "UNKNOWN"
+            v_r = v_result or "UNKNOWN"
+            if t_result and v_result and t_result != v_result:
+                discrepancy_detail = f"text={t_result}, visual={v_result} (LLM reconciliation unavailable)"
+            elif t_result and not v_result:
+                discrepancy_detail = f"text={t_result}, visual=missing (single-scorer, LLM unavailable)"
+            elif v_result and not t_result:
+                discrepancy_detail = f"text=missing, visual={v_result} (single-scorer, LLM unavailable)"
+            else:
+                discrepancy_detail = "LLM reconciliation unavailable"
             consumer_criteria.append({
                 "criterion": ref.get("criterion", ""),
-                "text_result": t_result or "UNKNOWN",
-                "visual_result": v_result or "UNKNOWN",
+                "text_result": t_r,
+                "visual_result": v_r,
                 "reconciled": "UNKNOWN",
                 "confidence": "low",
-                "evidence": "Fallback: LLM reconciliation failed",
-                "discrepancy": "LLM reconciliation unavailable",
+                "evidence": f"Fallback: {discrepancy_detail}",
+                "discrepancy": discrepancy_detail,
             })
 
     return {
@@ -635,11 +656,22 @@ async def _reconcile_page(
         availability=availability,
     )
 
-    try:
-        response = await llm.ainvoke(prompt)
-        raw_text: str = response.content if hasattr(response, "content") else str(response)
-    except Exception:
-        logger.exception("LLM call failed for page %s, using fallback", page_id)
+    # Retry with exponential backoff for transient LLM failures
+    last_error = None
+    raw_text = None
+    for attempt in range(3):
+        try:
+            response = await llm.ainvoke(prompt)
+            raw_text = response.content if hasattr(response, "content") else str(response)
+            break
+        except Exception as e:
+            last_error = e
+            if attempt < 2:
+                wait = 2 ** (attempt + 1)
+                logger.warning("Reconciler LLM call failed for page %s (attempt %d/3), retrying in %ds: %s", page_id, attempt + 1, wait, e)
+                await asyncio.sleep(wait)
+    if raw_text is None:
+        logger.error("Reconciler LLM call failed for page %s after 3 attempts: %s", page_id, last_error)
         return _fallback_page(page_id, text_page, visual_page)
 
     parsed = _parse_reconciliation_response(raw_text)

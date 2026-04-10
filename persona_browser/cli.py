@@ -121,6 +121,31 @@ def main():
 
     args = parser.parse_args()
 
+    # Early validation — fail fast with clear errors
+    if not Path(args.persona).exists():
+        print(json.dumps({
+            "status": "SKIP",
+            "error": f"Persona file not found: {args.persona}",
+            "reason": "missing_persona",
+        }))
+        sys.exit(1)
+
+    if args.codeintel and not Path(args.codeintel).exists():
+        print(json.dumps({
+            "status": "SKIP",
+            "error": f"Codeintel file not found: {args.codeintel}",
+            "reason": "missing_codeintel",
+        }))
+        sys.exit(1)
+
+    if args.rubric and not Path(args.rubric).exists():
+        print(json.dumps({
+            "status": "SKIP",
+            "error": f"Rubric file not found: {args.rubric}",
+            "reason": "missing_rubric",
+        }))
+        sys.exit(1)
+
     # Load config
     config = load_config(args.config or None)
 

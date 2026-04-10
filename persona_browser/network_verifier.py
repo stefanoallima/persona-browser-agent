@@ -9,7 +9,25 @@ to verify API contracts, auth flow integrity, and catch wiring errors.
 
 from __future__ import annotations
 
+import re
 from urllib.parse import urlparse
+
+
+# Patterns that are safe to ignore when unmatched against codeintel.
+# These are common browser/framework requests, not app API calls.
+_SAFE_UNMATCHED_PATTERNS = [
+    r"/favicon\.ico$",
+    r"/manifest\.json$",
+    r"/robots\.txt$",
+    r"/sitemap\.xml$",
+    r"/\.well-known/",
+    r"/__webpack",
+    r"/_next/",
+    r"/hot-update",
+    r"/sockjs-node",
+    r"/ws$",
+]
+_SAFE_UNMATCHED_RE = re.compile("|".join(_SAFE_UNMATCHED_PATTERNS))
 
 
 def verify_network(
@@ -68,8 +86,10 @@ def verify_network(
         if matched_codeintel:
             api_calls_matched += 1
             expected_statuses = [int(s) for s in matched_ep.get("responses", {}).keys()]
-            expected_status = expected_statuses[0] if expected_statuses else None
+            # Accept ANY of the documented status codes as a valid contract match
             contract_match = status in expected_statuses if expected_statuses else False
+            # Report expected_status as the closest match, or first if no exact match
+            expected_status = status if contract_match else (expected_statuses[0] if expected_statuses else None)
             auth_required = matched_ep.get("auth_required", False)
             sets_auth = any(
                 r.get("sets_auth") for r in matched_ep.get("responses", {}).values()
@@ -81,7 +101,10 @@ def verify_network(
             contract_match = False
             auth_required = False
             sets_auth = False
-            issues.append(f"Unmatched endpoint: {method} {path}")
+            # Only report unmatched endpoints that aren't known safe patterns
+            # (favicon, webpack HMR, etc.)
+            if not _SAFE_UNMATCHED_RE.search(path):
+                issues.append(f"Unmatched endpoint: {method} {path}")
 
         # Check for 500 errors — always a deal-breaker
         if status >= 500:
@@ -169,10 +192,18 @@ def verify_network(
 
 
 def _normalize_path(path: str) -> str:
-    """Strip trailing slash from a URL path (but keep the root '/')."""
-    if path and path != "/" and path.endswith("/"):
-        return path.rstrip("/")
-    return path
+    """Normalize a URL path for comparison.
+
+    Strips query parameters, fragments, and trailing slashes (but keeps root '/').
+    This ensures /api/users?page=1 matches /api/users in codeintel.
+    """
+    # Strip query params and fragments
+    parsed = urlparse(path)
+    clean = parsed.path if parsed.scheme or parsed.netloc else path.split("?")[0].split("#")[0]
+    # Strip trailing slash (but keep root)
+    if clean and clean != "/" and clean.endswith("/"):
+        clean = clean.rstrip("/")
+    return clean
 
 
 def _check_auth_token_set(

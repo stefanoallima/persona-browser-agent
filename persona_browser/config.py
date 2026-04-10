@@ -47,16 +47,16 @@ class ScoringConfig(BaseModel):
 
 class BrowserConfig(BaseModel):
     headless: bool = True
-    width: int = 1280
-    height: int = 720
-    # Legacy field — kept for backward compatibility.
-    # Use timeout_seconds instead; timeout_seconds takes precedence when set.
+    width: int = Field(default=1280, gt=0)
+    height: int = Field(default=720, gt=0)
+    # Legacy field — kept for backward compatibility with old config files.
+    # timeout_seconds takes precedence when set.
     timeout: int = 300
     record_video: bool = False
     record_video_dir: str = "./recordings"
     # Navigator control fields (v2+)
-    max_steps: int = 50             # Max browser-use agent steps before stopping
-    timeout_seconds: int = 120      # Max seconds for navigator session (preferred over timeout)
+    max_steps: int = Field(default=50, gt=0)  # Max browser-use agent steps before stopping
+    timeout_seconds: int = Field(default=120, gt=0)  # Max seconds for navigator session
     app_domains: List[str] = Field(default_factory=list)  # Domains for HAR filtering (empty = all)
     capture_network: bool = True    # Enable HAR recording
 

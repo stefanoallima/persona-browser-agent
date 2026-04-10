@@ -117,10 +117,22 @@ async def run_navigator(
             logger.warning(
                 "browser_use.llm.litellm.chat not available — falling back to ChatOpenAI"
             )
+        except ImportError:
+            return create_report(
+                status=ReportStatus.SKIP,
+                error=(
+                    "No LLM backend available. Install one of:\n"
+                    "  pip install browser-use        (includes ChatLiteLLM)\n"
+                    "  pip install langchain-openai    (ChatOpenAI fallback)"
+                ),
+                elapsed=0,
+                persona=persona_path,
+                url=url,
+            )
         except Exception as e:
             return create_report(
                 status=ReportStatus.SKIP,
-                error=f"LLM creation failed: {e}",
+                error=f"LLM creation failed (ChatOpenAI fallback): {e}",
                 elapsed=0,
                 persona=persona_path,
                 url=url,
@@ -128,7 +140,7 @@ async def run_navigator(
     except Exception as e:
         return create_report(
             status=ReportStatus.SKIP,
-            error=f"LLM creation failed: {e}",
+            error=f"LLM creation failed: {e}. Provider: {config.llm.provider}, Model: {config.llm.model}",
             elapsed=0,
             persona=persona_path,
             url=url,
@@ -159,14 +171,25 @@ async def run_navigator(
     )
 
     # ── HAR monkey-patch (must happen BEFORE BrowserSession is created) ───────
+    # This patches browser-use's internal _is_https to accept http:// URLs
+    # for HAR recording (needed for localhost dev servers). Coupled to
+    # browser-use internals — may break on version updates.
     if config.browser.capture_network:
         try:
+            import browser_use
+            bu_version = getattr(browser_use, "__version__", "unknown")
             import browser_use.browser.watchdogs.har_recording_watchdog as _har_mod
-            _har_mod._is_https = lambda u: bool(
-                u and (u.startswith("https://") or u.startswith("http://"))
-            )
+            if not hasattr(_har_mod, "_is_https"):
+                logger.warning(
+                    "HAR monkey-patch skipped: _is_https not found in browser-use %s. "
+                    "HAR recording may not work for http:// URLs.", bu_version
+                )
+            else:
+                _har_mod._is_https = lambda u: bool(
+                    u and (u.startswith("https://") or u.startswith("http://"))
+                )
         except Exception as exc:
-            logger.warning("HAR monkey-patch failed (non-fatal): %s", exc)
+            logger.warning("HAR monkey-patch failed (non-fatal, browser-use may have changed): %s", exc)
 
     # ── BrowserProfile & BrowserSession ───────────────────────────────────────
     har_path = None
@@ -177,7 +200,9 @@ async def run_navigator(
 
     if config.browser.capture_network:
         try:
-            har_path = tempfile.mktemp(suffix=".har")
+            har_fd = tempfile.NamedTemporaryFile(suffix=".har", delete=False)
+            har_path = har_fd.name
+            har_fd.close()  # close fd; browser-use will write to this path
             profile_kwargs["record_har_path"] = har_path
             profile_kwargs["record_har_content"] = "embed"
         except Exception as exc:
@@ -202,7 +227,22 @@ async def run_navigator(
             max_steps=config.browser.max_steps,
         )
 
-        result = await agent.run()
+        timeout_secs = config.browser.timeout_seconds or config.browser.timeout or 300
+        try:
+            result = await asyncio.wait_for(agent.run(), timeout=timeout_secs)
+        except asyncio.TimeoutError:
+            elapsed = time.time() - start_time
+            logger.error("Navigator timed out after %ds", timeout_secs)
+            return create_report(
+                status=ReportStatus.ERROR,
+                error=f"Navigator timed out after {timeout_secs}s",
+                elapsed=elapsed,
+                persona=persona_path,
+                url=url,
+                scope=scope,
+                task_id=task_id,
+                objectives=objectives,
+            )
         elapsed = time.time() - start_time
 
         # Determine status: PARTIAL if agent did not complete (max_steps hit)
@@ -251,12 +291,13 @@ async def run_navigator(
         except Exception as stop_exc:
             logger.warning("Session stop failed (non-fatal): %s", stop_exc)
 
-        # Clean up temp HAR file
+        # Clean up temp HAR file — always runs, even if har_path was set then
+        # recording failed. Prevents temp file accumulation.
         if har_path:
             try:
                 Path(har_path).unlink(missing_ok=True)
             except Exception:
-                pass
+                logger.debug("Could not remove temp HAR file: %s", har_path)
 
     # ── Parse structured v3 output ────────────────────────────────────────────
     navigator_output = _build_navigator_output(
