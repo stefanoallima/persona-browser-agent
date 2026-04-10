@@ -128,7 +128,7 @@ def main():
             "error": f"Persona file not found: {args.persona}",
             "reason": "missing_persona",
         }))
-        sys.exit(1)
+        sys.exit(0)
 
     if args.codeintel and not Path(args.codeintel).exists():
         print(json.dumps({
@@ -136,7 +136,7 @@ def main():
             "error": f"Codeintel file not found: {args.codeintel}",
             "reason": "missing_codeintel",
         }))
-        sys.exit(1)
+        sys.exit(0)
 
     if args.rubric and not Path(args.rubric).exists():
         print(json.dumps({
@@ -144,7 +144,7 @@ def main():
             "error": f"Rubric file not found: {args.rubric}",
             "reason": "missing_rubric",
         }))
-        sys.exit(1)
+        sys.exit(0)
 
     # Load config
     config = load_config(args.config or None)

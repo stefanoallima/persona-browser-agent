@@ -21,7 +21,7 @@ class LLMConfig(BaseModel):
 
 class ScoringLLMConfig(BaseModel):
     provider: str = "openrouter"
-    model: str = ""
+    model: str = "google/gemini-2.5-flash-preview"  # non-empty default prevents late errors
     endpoint: str = "https://openrouter.ai/api/v1"
     api_key_env: str = "OPENROUTER_API_KEY"
     temperature: float = 0.1

@@ -101,10 +101,19 @@ async def run_scorers(
         except Exception as e:
             return {"error": str(e)}
 
-    # Run all three in parallel
-    network_result, text_result, visual_result = await asyncio.gather(
-        _run_network(), _run_text(), _run_visual()
-    )
+    # Run all three in parallel with timeout protection.
+    # If any scorer hangs (e.g., LLM API never responds), we don't block forever.
+    scorer_timeout = 300  # 5 minutes max for all scorers combined
+    try:
+        network_result, text_result, visual_result = await asyncio.wait_for(
+            asyncio.gather(_run_network(), _run_text(), _run_visual()),
+            timeout=scorer_timeout,
+        )
+    except asyncio.TimeoutError:
+        # Return whatever we have — network verifier is fast and likely completed
+        network_result = verify_network(all_network_log, codeintel, manifest)
+        text_result = {"error": f"Scorer pipeline timed out after {scorer_timeout}s"}
+        visual_result = {"error": f"Scorer pipeline timed out after {scorer_timeout}s"}
 
     return {
         "network_verification": network_result,
