@@ -4,7 +4,7 @@ description: "Persona validation gate. Use when the user wants to validate if wo
 license: MIT
 metadata:
   author: sudd
-  version: "3.7.0"
+  version: "3.8.0"
 ---
 
 Persona validation gate. The critical check: does this deliver actual value?

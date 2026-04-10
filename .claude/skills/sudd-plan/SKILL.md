@@ -4,7 +4,7 @@ description: "Create specs, design, and tasks for a change. Use when the user wa
 license: MIT
 metadata:
   author: sudd
-  version: "3.7.0"
+  version: "3.8.0"
 ---
 
 Create detailed specifications, design, and implementation tasks for a change.

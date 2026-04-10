@@ -4,7 +4,7 @@ description: "Initialize SUDD in a project. Use when setting up SUDD for the fir
 license: MIT
 metadata:
   author: sudd
-  version: "3.7.0"
+  version: "3.8.0"
 ---
 
 You are initializing SUDD2 in the current repository. This sets up the full autonomous development framework with 20 agents, memory system, and orchestrator commands.

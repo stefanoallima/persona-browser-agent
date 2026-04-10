@@ -4,7 +4,7 @@ description: "Full autonomous SUDD workflow. Use when the user wants to build a 
 license: MIT
 metadata:
   author: sudd
-  version: "3.7.0"
+  version: "3.8.0"
 ---
 
 Full autonomous SUDD workflow. Runs the complete loop from vision to done.
