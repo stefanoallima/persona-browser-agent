@@ -1,7 +1,7 @@
 # Persona Browser Agent v2 — Design Spec
 
 **Date**: 2026-03-29
-**Status**: Approved
+**Status**: SUPERSEDED by `docs/architecture-proposal-v3.md` (v3.1, 2026-03-30). Kept for historical reference only.
 **Approach**: Pipeline Architecture (Approach B)
 
 ---

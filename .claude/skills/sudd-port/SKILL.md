@@ -735,8 +735,28 @@ State: brown mode, {phase} phase
 imported_from: {framework}
 
 Review the ported artifacts, then:
-  /sudd:status  — check what was created
-  /sudd:run     — start autonomous workflow
+  /sudd:status    — check what was created
+  /sudd:discover  — explore codebase and find gaps (auto-runs if discovery.auto_on_port)
+  /sudd:run       — start autonomous workflow
+```
+
+### Post-Port Discovery (v3.4)
+
+After port output, if `sudd.yaml → discovery.auto_on_port` is true (default):
+
+```
+Invoke /sudd:discover --force
+  → codebase-explorer: generates codebase-manifest.json
+  → alignment-reviewer: compares manifest vs ported docs
+  → task-discoverer: creates proposals from gaps
+
+This validates that ported artifacts match code reality and generates
+a backlog of actionable changes before /sudd:run begins.
+```
+
+If `auto_on_port` is false, suggest it in the output:
+```
+  💡 Run /sudd:discover to find gaps between docs and code
 ```
 
 ### Multi-framework merge
@@ -756,8 +776,9 @@ State: brown mode, build phase
 imported_from: openspec+bmad
 
 Review the ported artifacts, then:
-  /sudd:status  — check what was created
-  /sudd:run     — start autonomous workflow
+  /sudd:status    — check what was created
+  /sudd:discover  — explore codebase and find gaps
+  /sudd:run       — start autonomous workflow
 
 
 ---

@@ -126,6 +126,66 @@ Health reports from the monitor agent. Most recent first.
 (No sessions yet)
 ```
 
+Create directory `memory/stuck-history/` and write `memory/stuck-history/.gitkeep`:
+```
+# Stuck task histories are saved here by /sudd:done for STUCK changes.
+# Each file: {change-id}.md with full feedback history and rollback commands.
+```
+
+### Global Learning Directory (cross-repo)
+
+Check if `~/.sudd/learning/` exists. If not, create it:
+```bash
+mkdir -p ~/.sudd/learning
+```
+
+Write `~/.sudd/learning/patterns.md` (only if it doesn't already exist):
+```markdown
+# SUDD Global Patterns
+
+Patterns shared across all SUDD-managed repositories.
+Each pattern includes a **Source:** tag identifying the originating repo.
+
+---
+
+(No global patterns yet)
+```
+
+Log: "Global learning directory: ~/.sudd/learning/ (patterns shared across repos)"
+
+### MemPalace Setup (v3.6 — optional)
+
+Check if `sudd.yaml → mempalace.enabled` is true:
+
+```
+If mempalace.enabled:
+  1. Check if mempalace CLI is installed:
+     which mempalace || mempalace --version
+
+  2. If NOT installed:
+     Log: "⚠ MemPalace not installed. Semantic learning disabled."
+     Log: "  Install: pip install mempalace"
+     Log: "  Then re-run /sudd:init to complete setup."
+     (Continue init — MemPalace is optional)
+
+  3. If installed:
+     mempalace init {cwd}/sudd/memory/
+     Log: "✓ MemPalace initialized for project {basename}"
+
+  4. Display MCP configuration instructions:
+     Log: "To enable semantic search in Claude Code, add to settings.json → mcpServers:"
+     Log: '  "mempalace": {'
+     Log: '    "command": "mempalace",'
+     Log: '    "args": ["mcp"]'
+     Log: '  }'
+     Log: ""
+     Log: "Or for other CLI tools, start the MCP server: mempalace mcp"
+
+If NOT mempalace.enabled:
+  Log: "ℹ MemPalace disabled. Enable in sudd.yaml for semantic learning."
+  Log: "  (Optional — tag-based learning works without it)"
+```
+
 ---
 
 ## Step 5: Create default persona

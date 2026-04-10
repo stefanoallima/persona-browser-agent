@@ -64,47 +64,235 @@ The **Hypothesis** field is MANDATORY. It forces the agent to theorize about the
 
 Write to `memory/lessons.md`.
 
+### MemPalace Dual Write (v3.6)
+
+After writing the lesson to `memory/lessons.md`, also index it in MemPalace:
+
+```
+If sudd.yaml → mempalace.enabled AND mempalace_add_drawer MCP tool available:
+  mempalace_add_drawer(
+    content: {full lesson text including all template fields},
+    wing: {project-name from sudd.yaml or cwd basename},
+    room: "lessons",
+    tags: {comma-separated tags from the **Tags:** field}
+  )
+  Log: "Lesson indexed in mempalace: wing={wing}, room=lessons"
+
+If MCP tool NOT available:
+  Log: "MemPalace unavailable — lesson written to markdown only"
+  (This is fine — sudd learn mine can backfill later)
+```
+
 ## Mode 2: Pre-Task Injection (before agent executes)
 
-When an agent is about to execute:
-1. Read `memory/lessons.md`
-2. Match lessons by tags relevant to the current task (technology, domain, pattern type)
-3. Select top-3 most relevant lessons by:
+Check `sudd.yaml → mempalace.enabled` and whether MCP tool `mempalace_search` is available.
+
+### Path A: Semantic Search (MemPalace available)
+
+When `mempalace.enabled: true` AND `mempalace_search` MCP tool responds:
+
+1. Build a natural language query from the current task context:
+   - Technology stack (from design.md file extensions / frameworks)
+   - Task domain (from proposal.md / specs.md)
+   - What the task is trying to accomplish (from tasks.md description)
+   - Prior failure patterns (from log.md if retry)
+   - Example: `"Go API endpoint authentication middleware with JWT validation"`
+
+2. Search local project lessons:
+   ```
+   mempalace_search(
+     query: "{natural language query}",
+     wing: "{project-name}",
+     room: "lessons",
+     n_results: 3
+   )
+   ```
+
+3. Search local project patterns:
+   ```
+   mempalace_search(
+     query: "{natural language query}",
+     wing: "{project-name}",
+     room: "patterns",
+     n_results: 2
+   )
+   ```
+
+4. Search across ALL projects (cross-repo):
+   ```
+   mempalace_search(
+     query: "{natural language query}",
+     n_results: 2
+   )
+   ```
+
+5. Search session context (rich execution history):
+   ```
+   mempalace_search(
+     query: "{natural language query}",
+     wing: "{project-name}",
+     room: "sessions",
+     n_results: 2
+   )
+   ```
+
+6. Deduplicate results (same content from different queries). Rank by similarity score.
+   Select top-5 (configurable via `sudd.yaml → learning.max_injected_items`).
+
+7. Inject as context block for the agent (format below).
+
+Log: `"Semantic injection: {N} items from mempalace (scores: {s1}, {s2}, ..., {sN})"`
+
+### Path B: Tag-Based Matching (fallback)
+
+When `mempalace.enabled: false` OR MCP tool unavailable OR `mempalace.fallback_to_tags: true` and semantic search fails:
+
+1. Read `memory/lessons.md` — local lessons from this repo
+2. Read `memory/patterns.md` — local promoted patterns (higher weight than raw lessons)
+3. Read `~/.sudd/learning/patterns.md` — global patterns from ALL repos (if exists)
+4. Match lessons AND patterns by tags relevant to the current task (technology, domain, pattern type)
+5. Prioritize: patterns > lessons (patterns are validated, lessons are single-occurrence)
+6. Select top-5 most relevant items by:
+   - Source type: pattern (weight 2x) > lesson (weight 1x)
    - Tag match strength
    - Confidence level
    - Recency (more recent = more relevant, unless reinforced)
-4. Inject as context block for the agent
+7. Inject as context block for the agent (format below).
+
+Log: `"Tag-based injection: {N} items ({P} patterns, {L} lessons) for tags: {tags}"`
 
 ### Injection Format
 ```
 ## Lessons for This Task
-1. {lesson} (confidence: HIGH, relevance: 9/10, from: {change-id})
-2. {lesson} (confidence: MEDIUM, relevance: 7/10, from: {change-id})
-3. {lesson} (confidence: LOW, relevance: 5/10, from: {change-id})
+### Patterns (validated across multiple changes):
+1. {pattern rule} (confidence: VERY HIGH, similarity: {score}, from: {source})
+2. {pattern rule} (confidence: HIGH, similarity: {score}, from: {source})
+
+### Lessons (single-change observations):
+3. {lesson} (confidence: HIGH, similarity: {score}, from: {change-id})
+4. {lesson} (confidence: MEDIUM, similarity: {score}, from: {change-id})
+5. {lesson} (confidence: LOW, similarity: {score}, from: {change-id})
+
+### Session Context (rich execution history, if available):
+6. {relevant excerpt from past log.md} (from: {change-id}, relevance: {score})
 ```
+
+Global patterns are tagged with `**Source:** {repo-name}` — include the source in injection so agents know the pattern came from a different project context.
 
 ## Mode 3: Pattern Promotion
 
 ### Promotion Trigger (MANDATORY — runs after EVERY task completion)
 
-1. Read ALL lessons in `memory/lessons.md`
-2. Extract **Tags:** from each lesson. Group by tag combinations.
-3. If any tag combination appears in 3+ lessons from DIFFERENT changes:
-   - Check if pattern already exists in `memory/patterns.md`
-   - If NOT: create new pattern entry (format below)
-   - If EXISTS: update occurrence count and add new evidence
-4. Log: "Pattern check: {N} tag groups scanned, {M} patterns promoted"
+This is NOT optional. It is called explicitly by done.md Step 2b. You MUST execute the full algorithm below.
 
-This is NOT optional. After 89+ tasks with zero patterns promoted, the system has a broken feedback loop. Run this check every time.
+### Algorithm (follow mechanically)
+
+**Step A: Build the tag index**
+1. Read ALL entries in `memory/lessons.md`
+2. For each `### [DONE|STUCK|FAILURE]` entry, extract the `**Tags:**` line
+3. Split tags by comma → trim whitespace → normalize to lowercase
+4. Build a map: `tag → [list of change-ids that have this tag]`
+
+**Step B: Scan individual tags**
+5. For each tag where `len(change-ids) >= 3`:
+   - This tag is a **pattern candidate**
+   - Collect: the tag, all change-ids, the `**Lesson:**` or `**What worked:**` text from each
+
+**Step C: Scan tag pairs**
+6. For each unique pair of tags (e.g., "agents" + "scoring"):
+   - Count how many DIFFERENT change-ids have BOTH tags
+   - If >= 3: this pair is a **pattern candidate**
+
+**Step D: Write patterns**
+7. For each pattern candidate (individual tag or pair):
+   a. Read `memory/patterns.md`
+   b. Search for an existing `### Pattern:` section that matches this tag/pair
+   c. If NOT found: append a new pattern entry (format below)
+   d. If found: update the `**Occurrences:**` count and add new evidence lines
+8. Write to global learning if enabled (see Cross-Repo Learning)
+
+**Step E: Log result**
+9. Log: `"Pattern scan: {N} tags indexed, {M} candidates found, {P} new patterns written, {U} existing patterns updated"`
 
 ### Pattern Format
 ```
-### Pattern: {name}
-**Occurrences:** {count} ({change-ids})
-**Rule:** {the pattern}
-**Evidence:** {brief summary of each occurrence}
+### Pattern: {tag or tag-pair name}
+**Tags:** {tag1}, {tag2}
+**Occurrences:** {count} ({change-id-1}, {change-id-2}, {change-id-3}, ...)
+**Rule:** {generalized lesson — synthesize from the individual lessons}
+**Evidence:**
+- {change-id-1}: {one-line summary of what happened}
+- {change-id-2}: {one-line summary}
+- {change-id-3}: {one-line summary}
 **Status:** ESTABLISHED
+**Confidence:** HIGH (3-4 occurrences) | VERY HIGH (5+)
 ```
+
+### Worked Example
+
+Given these lessons in `lessons.md`:
+```
+### [DONE] brown_framework-hardening_01
+**Tags:** framework, agents, state-machine, go-cli
+**Lesson:** When changing thresholds, grep ALL files for old values including examples.
+
+### [DONE] brown_agent-sophistication_01
+**Tags:** framework, agents, activation-protocol, stale-paths
+**Lesson:** When updating agent files, grep the ENTIRE sudd/ directory for stale paths.
+
+### [DONE] brown_impeccable-integration_01
+**Tags:** framework, agents, design-quality, scoring
+**Lesson:** When adding a new agent, grep ALL files for the old agent count.
+
+### [DONE] brown_validation-rubrics_01
+**Tags:** framework, agents, validation, scoring
+**Lesson:** When reordering agent steps, check each agent's OUTPUTS metadata section.
+```
+
+**Step A result:**
+- framework → [hardening, sophistication, impeccable, rubrics] (4)
+- agents → [hardening, sophistication, impeccable, rubrics] (4)
+- scoring → [impeccable, rubrics] (2 — below threshold)
+- state-machine → [hardening] (1)
+- ...
+
+**Step B result:**
+- "framework" qualifies (4 changes)
+- "agents" qualifies (4 changes)
+
+**Step C result:**
+- ("framework", "agents") → 4 changes have both → qualifies
+
+**Step D result:**
+Write to `memory/patterns.md`:
+```
+### Pattern: cross-file-grep-on-change
+**Tags:** framework, agents
+**Occurrences:** 4 (hardening, sophistication, impeccable, rubrics)
+**Rule:** When changing any value, agent, or threshold in the SUDD framework, grep ALL files in sudd/ for the old value in every textual variation — not just the files in your task list.
+**Evidence:**
+- hardening: threshold change missed examples in gate.md
+- sophistication: stale v1 paths found outside change scope
+- impeccable: agent count missed 2 of 4 occurrences
+- rubrics: step reorder left stale OUTPUTS reference
+**Status:** ESTABLISHED
+**Confidence:** VERY HIGH
+```
+
+### Cross-Repo Learning (v3.5)
+
+After writing patterns to local `memory/patterns.md`, also write to global:
+
+```
+If directory ~/.sudd/learning/ exists:
+  Read ~/.sudd/learning/patterns.md (create if missing)
+  For each NEW pattern written in Step D:
+    Prepend repo identifier: **Source:** {repo-name} ({cwd basename})
+    Append to ~/.sudd/learning/patterns.md
+  Log: "Global learning: {N} patterns exported to ~/.sudd/learning/"
+```
+
+Global patterns are READ by Mode 2 (pre-task injection) from any repo.
 
 ## Mode 4: Root Cause Streak Detection
 

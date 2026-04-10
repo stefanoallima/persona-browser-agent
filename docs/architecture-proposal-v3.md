@@ -275,6 +275,7 @@ Just navigate, observe, and report your experience."
   "persona": "path/to/persona.md",
   "url": "http://localhost:3000",
   "scope": "gate",
+  "cdp_port": 9222,
 
   "manifest_coverage": {
     "expected_pages": ["registration", "dashboard"],
@@ -737,6 +738,7 @@ The final JSON report merges outputs from Navigator, Text Scorer, Visual Scorer,
   "persona": "path/to/persona.md",
   "url": "http://localhost:3000",
   "scope": "gate",
+  "cdp_port": 9222,
 
   "agent_result": "## Persona Test Report\n\n...(backward compat narrative)...",
 
@@ -1651,9 +1653,10 @@ FOR EACH persona:
       - missing pages → -10 per missing page
       - 0% coverage → automatic FAIL
 
-    experience_factor:
-      - navigator satisfaction < 5 → -5 from overall
-      - navigator "would not recommend" → -10 from overall
+    experience_factor (INFORMATIONAL — included in report for human review, does NOT affect score):
+      - navigator satisfaction and "would recommend" are LLM-fabricated subjective ratings
+      - using them to penalize scores creates circular LLM-judging-LLM dependency
+      - included in gate report for morning review, not in PASS/FAIL calculation
 
   CHECK ALL (must ALL pass):
     □ pb_score >= rubric_threshold.pb (default 98)
@@ -1890,7 +1893,7 @@ browser_use:
     must_pass_weight: 1.0     # "Must Pass" failure = full weight
     should_pass_weight: 0.5   # "Should Pass" failure = half weight
     manifest_missing_penalty: 10  # -10 per missing page
-    experience_low_penalty: 5     # -5 if satisfaction < 5
+    # experience_factor: INFORMATIONAL ONLY (not a penalty — LLM-fabricated, for human review)
     network_error_penalty: 15     # -15 per API error during normal flow
     verification_fail_penalty: 20 # -20 per failed verification task
   deal_breaker_policy: "instant_fail"
@@ -1915,7 +1918,7 @@ browser_use:
 | Report JSON malformed | gate (JSON parse) | Technical-checks-only fallback |
 | Manifest missing | gate pre-flight | FAIL — "Run code-analyzer or /sudd:plan" |
 | Rubric missing | gate pre-flight | FAIL — "Run code-analyzer or /sudd:plan" |
-| Codeintel missing | gate pre-flight | Proceed without code verification, reduced confidence |
+| Codeintel missing | gate pre-flight | FAIL for UI changes — "Run code-analyzer". Codeintel is required for scoring pipeline. Non-UI changes skip codeintel entirely. |
 | Navigator misses a manifest page | Score Reconciler | Flags as MISSING, criteria NOT_EVALUATED |
 | Code changed since codeintel was generated | gate (git check) | Re-run code-analyzer before browser testing |
 | HAR recording fails | persona-browser-agent (Navigator) | Network Verifier skipped, TASK COMPLETION from text only. Fallback: Playwright-over-CDP listeners |
@@ -2023,6 +2026,21 @@ Backend not running → all API calls fail,
 | Gate retry (4 retries avg, 3 personas) | 12 | ~$1.2-4.2 | ~3-7 min total |
 
 **Note**: GLM 5-turbo and Gemini 3 Flash are significantly cheaper than Haiku/Sonnet. The Network Verifier being deterministic saves one LLM call per persona. The adversarial rubric review adds ~$0.05-0.15 to the code-analyzer pipeline but runs only once per gate (amortized across all personas).
+
+### Model Capability Requirements
+
+If specific model IDs become unavailable at implementation time, substitute any model meeting these requirements:
+
+| Agent | Current Model | Required Capabilities | Budget |
+|-------|--------------|----------------------|--------|
+| Navigator | Gemini Flash | Multimodal (vision), browser-use compatible, function calling | <$0.08/call |
+| Text Scorer | GLM 5-turbo | Text-only, structured JSON output, >8K context | <$0.02/call |
+| Visual Scorer | Gemini 3 Flash | Multimodal (image input), structured JSON output, >8K context | <$0.08/call |
+| Network Verifier | None (Python) | N/A — deterministic, no LLM | $0.00 |
+| Score Reconciler | Sonnet | Strong reasoning, structured JSON output, >32K context | <$0.15/call |
+| Code Analyzer FE/BE | Haiku | Text-only, code comprehension, structured JSON output | <$0.02/call |
+| Code Analyzer Reviewer | Sonnet | Reasoning for cross-validation, structured JSON, >32K context | <$0.10/call |
+| Rubric Adversary | Haiku | Text-only, critique/analysis, structured output | <$0.02/call |
 
 ---
 

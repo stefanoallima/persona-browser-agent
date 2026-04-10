@@ -45,10 +45,10 @@ Outcome:
 
 ---
 
-## STEP 2: EXTRACT LESSONS
+## STEP 2a: EXTRACT LESSONS
 
 ```
-Dispatch(agent=learning-engine):
+Dispatch(agent=learning-engine, mode=1):
 
 Read: sudd/changes/active/{id}/log.md
 Read: All feedback from retries
@@ -60,12 +60,80 @@ Extract:
 4. Patterns to avoid
 
 Write: sudd/memory/lessons.md
-  ## {date}: {change-id}
-  - Lesson 1
-  - Lesson 2
+  Use the SUCCESS / FAILURE / STUCK template from learning-engine.md Mode 1.
+  Tags MUST be specific (e.g., "go-testing", "cross-file-consistency") not generic ("code", "testing").
+```
 
-If pattern seen 3+ times:
-  Promote to sudd/memory/patterns.md
+Verify: the new lesson entry exists at the bottom of `memory/lessons.md`.
+If NOT present: STOP. Re-run this step. Lessons are required before archiving.
+
+---
+
+## STEP 2b: PATTERN PROMOTION (MANDATORY — DO NOT SKIP)
+
+This step runs EVERY time, even if you think there are no new patterns.
+
+```
+Dispatch(agent=learning-engine, mode=3):
+
+1. Read ALL entries in sudd/memory/lessons.md
+2. For each entry, extract the **Tags:** line → split into individual tags
+3. Build a frequency table: for each tag, list which change-ids use it
+4. For each tag that appears in 3+ DIFFERENT change-ids:
+   a. Check sudd/memory/patterns.md — does a pattern with this tag already exist?
+   b. If NO:  Create a new pattern entry (format from learning-engine.md Mode 3)
+   c. If YES: Update the occurrence count and add new evidence
+5. Also check tag PAIRS (e.g., "framework" + "agents") — same 3+ threshold
+6. Log: "Pattern scan: {N} tags checked, {M} new patterns promoted, {K} patterns updated"
+```
+
+Also write promoted patterns to global learning (if enabled):
+```
+If ~/.sudd/learning/ exists:
+  Append new patterns to ~/.sudd/learning/patterns.md
+  (Do NOT overwrite — append only, with repo identifier prefix)
+```
+
+Verify: `memory/patterns.md` was updated OR the log shows "0 new patterns promoted" with the scan count.
+If the scan count is 0: STOP. You skipped the scan. Re-read lessons.md and actually count tags.
+
+---
+
+## STEP 2c: INDEX SESSION IN MEMPALACE (v3.6 — optional)
+
+This step only runs when `sudd.yaml → mempalace.enabled: true` AND `mempalace_add_drawer` MCP tool is available.
+If MemPalace is not configured, skip to Step 3.
+
+```
+Read: sudd/changes/active/{id}/log.md (FULL content — not just lessons)
+
+mempalace_add_drawer(
+  content: {full log.md content},
+  wing: {project-name from sudd.yaml or cwd basename},
+  room: "sessions",
+  tags: "{change-id}, {outcome: DONE|STUCK}, {date}"
+)
+
+Log: "Session indexed in mempalace: {change-id} ({N} chars)"
+```
+
+**Why this matters**: The lesson extracted in Step 2a is a 2-3 line summary. The full log.md contains:
+- Every agent dispatch and its result
+- All retry feedback and accumulated errors
+- Exact file changes and commit SHAs
+- Validation squad scores and critiques
+- Timing and cost data
+
+This rich context is searchable via `mempalace_search(room="sessions")` and surfaces during Mode 2 injection when a similar task is being attempted in the future.
+
+Also index the lesson and any new patterns in MemPalace:
+```
+If Step 2a wrote a new lesson:
+  mempalace_add_drawer(content: {lesson text}, wing: {project}, room: "lessons", tags: {tags})
+
+If Step 2b promoted new patterns:
+  For each new pattern:
+    mempalace_add_drawer(content: {pattern text}, wing: {project}, room: "patterns", tags: {pattern tags})
 ```
 
 ---
@@ -186,6 +254,26 @@ Update `sudd/state.json`:
   "last_command": "sudd:done"
 }
 ```
+
+### Discovery + Audit Counter Increment (v3.4)
+
+After updating state.json, increment both change counters:
+
+```
+Read state.json → discovery.changes_since_last (default 0 if missing)
+Write state.json → discovery.changes_since_last = previous + 1
+
+Read state.json → audit.changes_since_last_audit (default 0 if missing)
+Write state.json → audit.changes_since_last_audit = previous + 1
+```
+
+These feed the staleness checks:
+- `/sudd:discover` triggers after `discovery.run_every_n_changes` (default 3)
+- `/sudd:audit` triggers after `audit.auto_after_n_changes` (default 5)
+
+**NOTE**: When running inside `sudd auto`, the Go binary handles these
+increments automatically. Only update manually when running `/sudd:done`
+standalone outside of the auto pipeline.
 
 ---
 

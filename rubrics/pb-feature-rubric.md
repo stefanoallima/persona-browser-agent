@@ -59,11 +59,20 @@ Each criterion produces one of:
 | `forms.error_clears` | Error messages disappear once the user corrects the field | Text + Visual |
 | `forms.data_preserved_on_error` | Previously entered valid data is preserved after a validation error | Text + Visual |
 
+### Labels & UX Patterns
+
+| ID | Criterion | Scorer |
+|----|-----------|--------|
+| `forms.labels_not_placeholder_only` | Field labels are persistent (above or beside input), not placeholder-only — placeholders disappear on focus, leaving no label | Visual |
+| `forms.multi_step_progress` | Multi-step forms show a visible progress indicator (step count, progress bar, or breadcrumb) | Visual |
+| `forms.privacy_text_clear` | Privacy/consent text near forms is clear and non-intimidating (no dense legalese) | Text + Visual |
+
 ### Submission
 
 | ID | Criterion | Scorer |
 |----|-----------|--------|
 | `forms.submit_visible` | The submit button is visible and clearly labeled | Visual |
+| `forms.cta_benefit_oriented` | Submit button text is benefit-oriented and specific ('Get started', 'Create account'), not generic ('Submit', 'Send') | Text + Visual |
 | `forms.loading_state` | A loading/in-progress state is shown while the form is submitting | Visual |
 | `forms.success_confirmation` | A clear success confirmation is shown after successful submission | Text + Visual |
 

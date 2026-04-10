@@ -57,23 +57,31 @@ Read:
 
 ## STEP 1b: LESSON INJECTION (MANDATORY)
 
-Read `sudd/memory/lessons.md`. For current task, extract tags from:
+Read these sources (in priority order):
+1. `sudd/memory/patterns.md` — local promoted patterns (highest weight, validated)
+2. `~/.sudd/learning/patterns.md` — global patterns from ALL repos (if exists and `sudd.yaml → learning.inject_global: true`)
+3. `sudd/memory/lessons.md` — local raw lessons (lower weight, single-occurrence)
+
+For current task, extract tags from:
 - Task technology (from design.md file extensions / frameworks)
 - Task domain (from proposal.md / specs.md)
 - Prior failure patterns (from log.md if retry)
 
-Match lessons by tag overlap. Select top-3 by: tag match count > confidence > recency.
+Match patterns AND lessons by tag overlap. Prioritize: patterns > lessons.
+Select top-5 (configurable via `sudd.yaml → learning.max_injected_items`) by: source type (pattern 2x weight) > tag match count > confidence > recency.
 
 If matches found, include in ALL agent prompts for this task:
 ```
-## Lessons (DO NOT repeat these mistakes)
-1. {lesson} (from: {change-id}, confidence: {level})
-2. {lesson}
+## Lessons for This Task (DO NOT repeat these mistakes)
+### Patterns (validated across multiple changes):
+1. {pattern rule} (confidence: VERY HIGH, occurrences: {N}, source: {local|global:repo})
+### Lessons (single-change observations):
+2. {lesson} (from: {change-id}, confidence: {level})
 3. {lesson}
 ```
 
-Log: "Injected {N} lessons for tags: {tags}"
-If no matches: Log: "No matching lessons for tags: {tags}"
+Log: "Injected {N} items ({P} patterns, {L} lessons) for tags: {tags}"
+If no matches: Log: "No matching lessons/patterns for tags: {tags}"
 
 ---
 

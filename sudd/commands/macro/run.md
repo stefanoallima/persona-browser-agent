@@ -39,7 +39,12 @@ Agent invocation follows `sudd/standards.md` → Agent Invocation.
    ```
 5. **Read config**: Read `sudd/sudd.yaml` for agent tiers, escalation ladder, cost_mode
    - If missing: warn "No sudd.yaml found, defaulting all agents to free tier"
-5b. **Check for checkpoint**: If `sudd/changes/active/{id}/checkpoint.json` exists:
+5b. **Detect CLI**: Read `sudd.yaml -> cli`
+   - Determines dispatch syntax for all agent invocations this session
+   - Reference: `sudd/cli-adapter.md` for CLI-specific syntax
+   - If missing: infer from environment (which CLI am I running inside?)
+   - Skill invocation format: claude/crush use `/sudd:run`, opencode uses `/sudd-run`
+5c. **Check for checkpoint**: If `sudd/changes/active/{id}/checkpoint.json` exists:
    → Load checkpoint state
    → Skip completed tasks
    → Resume from checkpoint's current_task and current_step
@@ -64,24 +69,45 @@ If vision.md is empty or vague:
   → Or use /sudd:chat to explore first
 ```
 
-### Step 2: Create Change
-```
-Generate change-id: green_{name}_{seq:02d}
-  - name: kebab-case from vision content
-  - seq: next available number
+### Step 2: Discovery-Driven Change Generation (v3.4)
 
-Create: sudd/changes/active/{change-id}/
-  - proposal.md (from vision)
-  - specs.md (discovered requirements)
-  - design.md (architecture)
-  - tasks.md (implementation checklist)
-  - log.md (execution log)
+Before creating a single change, run the discovery pipeline to find ALL
+work that needs doing. This replaces the old single-change approach.
+
+```
+DISCOVERY CHECK:
+  Invoke /sudd:discover (follows staleness rules — may skip if recent)
+
+  If discovery ran and generated proposals:
+    → Multiple discovered_* proposals now exist in changes/active/
+    → Pick the highest-priority proposal as active change
+    → Continue to Step 3 with that change
+
+  If discovery skipped (recent + no changes):
+    → Check if any proposals exist in changes/active/ with status: proposed
+    → If yes: pick highest-priority, continue to Step 3
+    → If no: fall through to legacy single-change creation below
+
+  LEGACY FALLBACK (no discovery results, no existing proposals):
+    Generate change-id: green_{name}_{seq:02d}
+      - name: kebab-case from vision content
+      - seq: next available number
+
+    Create: sudd/changes/active/{change-id}/
+      - proposal.md (from vision)
+      - specs.md (discovered requirements)
+      - design.md (architecture)
+      - tasks.md (implementation checklist)
+      - log.md (execution log)
 
 Update: sudd/state.json
-  - active_change = {change-id}
+  - active_change = {selected change-id}
   - phase = "planning"
   <!-- Phase transition: none → planning (valid) -->
 ```
+
+NOTE: When running inside /sudd:auto, the remaining discovered proposals
+stay in the queue. After this change completes, auto processes the next one.
 
 ### Step 3: Research Agents (parallel)
 ```
@@ -198,7 +224,7 @@ Effort-based initial tier (overrides default if higher):
 Read sudd.yaml → parallelization.mode (default: "sequential")
 
 DEFAULT MODE: SEQUENTIAL
-  STEP 1b: Inject top-3 lessons from memory/lessons.md (per apply.md STEP 1b)
+  STEP 1b: Inject top-5 items from memory/patterns.md + ~/.sudd/learning/patterns.md + memory/lessons.md (per apply.md STEP 1b)
 
   CANARY (v3.1 — before first batch):
     If no tasks completed yet:
@@ -348,11 +374,22 @@ VALIDATION LOOP:
 
   6d. ARCHIVE PHASE (inline /sudd:done logic):
       - If PASSED:
-          → Dispatch(agent=learning-engine): extract lessons
+          → Step 2a: Dispatch(agent=learning-engine, mode=1): extract lessons to memory/lessons.md
+          → Step 2b: Dispatch(agent=learning-engine, mode=3): PATTERN PROMOTION (MANDATORY)
+            - Scan ALL lessons, build tag frequency map
+            - Promote patterns (3+ occurrences from different changes)
+            - Write to memory/patterns.md AND ~/.sudd/learning/patterns.md (if enabled)
+            - This step MUST run — see done.md Step 2b for full algorithm
+          → Step 2c: INDEX SESSION IN MEMPALACE (if mempalace.enabled)
+            - Index full log.md into sessions room for rich context preservation
+            - Index lesson + new patterns into respective rooms
+            - See done.md Step 2c for details
           → Move to sudd/changes/archive/{change-id}_DONE/
           → Create SUMMARY.md
-          → Update memory/lessons.md, patterns.md
       - If STUCK:
+          → Step 2a: Dispatch(agent=learning-engine, mode=1): extract lessons (failures too)
+          → Step 2b: Dispatch(agent=learning-engine, mode=3): PATTERN PROMOTION (still runs)
+          → Step 2c: INDEX SESSION IN MEMPALACE (if mempalace.enabled)
           → Move to sudd/changes/archive/{change-id}_STUCK/
           → Create STUCK.md with rollback commands
           → Copy to sudd/memory/stuck-history/
