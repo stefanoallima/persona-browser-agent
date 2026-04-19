@@ -4,7 +4,7 @@ description: "Create a new change proposal. Use when the user wants to start a n
 license: MIT
 metadata:
   author: sudd
-  version: "3.8.0"
+  version: "3.8.10"
 ---
 
 Create a new change proposal. First step in the planning phase.
@@ -14,15 +14,16 @@ Create a new change proposal. First step in the planning phase.
 - `/sudd:new "description"` — create from description
 - `/sudd:new {type}_{name}_{seq}` — create with specific ID
 
-**Change ID format**: `{type}_{name}_{seq:02d}`
-- type: green | brown | fix | refact
+**Change ID format**: `{NNN}_{type}_{name}_{seq:02d}`
+- NNN: global creation order (count all dirs in active/ + archive/ + stuck/, then +1, zero-padded to 3 digits)
+- type: green | brown | fix | refact | discovered
 - name: kebab-case description
 - seq: two-digit sequence number
 
 Examples:
-- `green_auth_01` — new auth system, first greenfield
-- `brown_api-v2_03` — API modification, third change
-- `fix_login-crash_02` — fix login crash, second fix
+- `001_green_auth_01` — first change ever, new auth system
+- `005_brown_api-v2_01` — fifth change overall, API modification
+- `012_fix_login-crash_01` — twelfth change, fix login crash
 
 ---
 
@@ -85,9 +86,6 @@ mkdir -p sudd/changes/active/{change-id}/
 Write `sudd/changes/active/{change-id}/proposal.md`:
 ```markdown
 # Change: {change-id}
-
-## Metadata
-sudd_version: 3.1
 
 ## Status
 proposed

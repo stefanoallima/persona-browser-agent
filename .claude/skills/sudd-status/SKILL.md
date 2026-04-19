@@ -4,7 +4,7 @@ description: "Show SUDD state and progress. Use when the user wants to check sta
 license: MIT
 metadata:
   author: sudd
-  version: "3.8.0"
+  version: "3.8.10"
 ---
 
 Show current SUDD state, active work, and session statistics.
@@ -64,12 +64,14 @@ Show current SUDD state, active work, and session statistics.
   ───────────────────────────────────────────────────────
 
   Active:
-    • green_auth_01 (current)
+    • 003_green_auth_01 (current)
 
-  Archive:
-    • green_dashboard_01_DONE
-    • brown_api-v2_01_DONE
-    • fix_login_01_STUCK
+  Archive (done):
+    • 001_green_dashboard_01_DONE
+    • 002_brown_api-v2_01_DONE
+
+  Stuck:
+    • 004_fix_login_01
 
 ═══════════════════════════════════════════════════════════
 ```
@@ -79,7 +81,7 @@ Show current SUDD state, active work, and session statistics.
 ## BRIEF FORMAT
 
 ```
-SUDD: green | build | green_auth_01 (4/7 tasks) | retries: 2/8
+SUDD: green | build | 003_green_auth_01 (4/7 tasks) | retries: 2/8
 ```
 
 ---
@@ -89,5 +91,5 @@ SUDD: green | build | green_auth_01 (4/7 tasks) | retries: 2/8
 1. Read `sudd/state.json`
 2. If active_change, read its files
 3. Count task completion
-4. List archive directory
-5. Format output
+4. List `changes/active/`, `changes/archive/`, and `changes/stuck/`
+5. Format output — show stuck/ separately from archive/

@@ -55,16 +55,16 @@ lack consumer research get the same discovery pass as green-mode projects.
 If either condition is true, run research agents:
 
 ```
-Dispatch(agent=researcher):
+Task(agent=researcher):
   - Investigate technologies needed
   - Find patterns in codebase
   - Identify standards to follow
 
-Dispatch(agent=persona-detector):
+Task(agent=persona-detector):
   - Discover WHO consumes this output
   - Map consumer chain
 
-Dispatch(agent=persona-researcher):
+Task(agent=persona-researcher):
   - Deep-research each consumer
   - Find deal-breakers, formats, unknown unknowns
 ```
@@ -76,11 +76,11 @@ Aggregate findings.
 In addition to repo-level persona research, create change-level personas:
 
 ```
-Dispatch(agent=persona-detector, scope=change):
+Task(agent=persona-detector, scope=change):
   - Who consumes THIS CHANGE's combined output?
   - Write to: sudd/changes/active/{id}/personas/
 
-Dispatch(agent=persona-researcher, scope=change):
+Task(agent=persona-researcher, scope=change):
   - Deep-research each change consumer
   - Write to: sudd/changes/active/{id}/personas/{consumer-name}.md
 ```
@@ -134,9 +134,6 @@ Write `sudd/changes/active/{id}/design.md`:
 ```markdown
 # Design: {change-id}
 
-## Metadata
-sudd_version: 3.3
-
 ## Architecture Overview
 {ASCII diagram of components}
 
@@ -176,7 +173,7 @@ If the change involves UI (proposal mentions frontend, dashboard, form, page, we
 OR design.md includes components producing HTML/CSS/JS):
 
 ```
-Dispatch(agent=ux-architect):
+Task(agent=ux-architect):
   Input: proposal.md, specs.md, design.md, existing UI patterns, change personas
   Output: ## UI Specification section appended to design.md
 
@@ -188,13 +185,6 @@ Dispatch(agent=ux-architect):
   - Accessibility requirements (WCAG 2.1 AA, focus order, ARIA)
   - Visual direction (delegates to superpowers:frontend-design for execution)
 ```
-
-If change involves UI:
-  Dispatch(agent=ux-designer):
-    Read ## UI Specification from design.md
-    Run ui-ux-pro-max scripts to generate design-system/MASTER.md
-    Generate per-page overrides in design-system/pages/
-    Append ## Design Tokens to design.md
 
 If no UI involvement detected: SKIP this step.
 
@@ -240,7 +230,7 @@ Total: N tasks | Est. effort: {sum}
 After tasks.md is created, generate micro-personas for every task:
 
 ```
-Dispatch(agent=micro-persona-generator):
+Task(agent=micro-persona-generator):
   Input: tasks.md, design.md, specs.md, codebase
   Output: sudd/changes/active/{id}/tasks/{task-id}/micro-persona.md (one per task)
 ```
@@ -291,39 +281,10 @@ Next: Run /sudd:apply to start implementation
 
 ---
 
-## STEP 6: Quality Loops (v3.7)
-
-After planning is complete, run the quality validation loops.
-These are the same loops that /sudd:run invokes (Steps 3b, 4b, 4c).
-
-```
-6a. Persona Early Validation (if personas exist):
-    FOR EACH persona in sudd/changes/active/{id}/personas/:
-      Dispatch(agent=persona-validator, mode=persona-quality)
-      If FAIL → Dispatch(agent=persona-researcher, mode=enrich) → re-validate (max 2)
-    Update state.json: personas_validated = true
-
-6b. Architecture Review (max 2 rounds):
-    Dispatch(agent=peer-reviewer, mode=design-review)
-    If REVISE → Dispatch(agent=architect, mode=revision) → re-review
-    Update state.json: architecture_reviewed = true
-
-6c. Design-Gate:
-    FOR EACH persona: Dispatch(agent=persona-validator, mode=design-gate)
-    If ANY < 70 → Dispatch(agent=architect, mode=revision) → re-gate (max 1)
-    If architect revised tasks.md → regenerate affected micro-personas
-    Update state.json: design_gate_passed = true, design_gate_score = {min}
-```
-
-See run.md Steps 3b, 4b, 4c for full specifications of each loop.
-
----
-
 ## GUARDRAILS
 
 - Always read proposal first
 - Run research when artifacts are missing (personas or handoff contracts), regardless of mode
 - Create handoff contracts in specs
 - Tasks should be granular (1-2 hours each)
-- Run quality loops (Step 6) before marking planning complete
 - Update state.json phase to "build"
