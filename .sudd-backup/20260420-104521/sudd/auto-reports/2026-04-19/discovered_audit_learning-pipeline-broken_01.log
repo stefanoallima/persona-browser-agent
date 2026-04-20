@@ -1,0 +1,18 @@
+```
+═══════════════════════════════════════
+  SUDD SESSION COMPLETE
+═══════════════════════════════════════
+  Mode:    brown
+  Change:  discovered_audit_learning-pipeline-broken_01 → DONE
+  Tasks:   5/5 completed (21/21 checkboxes)
+  Tests:   4 new (TestLessonRecorded_*), go test ./... -race clean
+  Gate:    98/100 EXEMPLARY (Stefano, audit mode)
+  Commit:  c68b57c feat(learning): pre-archive assertion for learning-pipeline
+═══════════════════════════════════════
+```
+
+**What shipped:** mechanical `grep -c "{change-id}" sudd/memory/lessons.md` pre-archive assertion in both `done.md` Step 2a and `run.md` Step 6d (DONE + STUCK branches), canonical Go form `auto.LessonRecorded` with 4-case unit test, 6 backfilled lesson entries for silent-skip archives (night-queue through v3820), and pattern promotion (`go-cli`, `doctor` → ESTABLISHED; `mechanical-enforcement` → EMERGING).
+
+**Self-test proof:** this change's own archive fired the new assertion on its own change-id and confirmed a lesson was recorded before `mv` — the fix verified itself end-to-end.
+
+Queue still has 2 remaining proposals (`discovered_audit_tasks-completion-enforcement_01`, `discovered_audit_summary-canonical-headings_01`) — the parent `sudd auto` process can pick them up next.

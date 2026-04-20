@@ -1,0 +1,15 @@
+```
+═══════════════════════════════════════
+  SUDD SESSION COMPLETE
+═══════════════════════════════════════
+  Mode:    brown
+  Change:  brown_v3817-resilience_01 → DONE
+  Tasks:   9/9 completed
+  Tests:   9 new (auto + doctor), go test ./... -race passes clean
+  Commit:  d6cc947 feat(v3.8.17): change-level resilience
+═══════════════════════════════════════
+```
+
+**Shipped:** auto-quarantine (`sudd/changes/stuck/`), per-change `**MaxDuration:**` with SIGTERM+30s grace, stuck-pattern detection in `sudd doctor`, `--retry-stuck` and `--ignore-stuck-pattern` flags, morning-report Quarantine + Detected Failure Patterns sections, and the checkpoint schema doc at `reference/checkpoint-schema.md`.
+
+One bad change can no longer eat an 8-hour queue — STUCKs quarantine themselves and leave diagnostic breadcrumbs for the next session.

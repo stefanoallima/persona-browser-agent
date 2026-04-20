@@ -1,0 +1,23 @@
+```
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Change: discovered_audit_summary-canonical-headings_01
+Mode: brown
+Outcome: DONE (first-attempt pass)
+
+Shipped:
+  • auto.SummaryHasCanonicalHeadings + ArchiveSummariesMissingHeadings (Go)
+  • 12 new unit/integrity/live-repo tests (all green)
+  • done.md Step 2e + canonical Step 3 template
+  • run.md Step 6d reference to Step 2e
+  • templates/ sync (was stale on 2a + 2d too)
+  • rubric.md Obj 3 verification.md scoped to HTTP-surface
+  • 23 archive SUMMARY.md backfilled (22 edited + 1 created)
+  • Lesson recorded in memory/lessons.md
+
+Gate: PASS (go test ./... -count=1 green across 9 packages)
+Pre-archive assertions: 2a/2d/2e all PASS
+Commit: fa522e3
+═══════════════════════════════════════
+```

@@ -1,0 +1,18 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+
+**Mode:** brown
+**Change:** `discovered_audit_runner-stuck-requires-reason_01` — **DONE**
+**Commit:** `dbbcd9e` on main
+
+**What shipped:**
+- `classifyStuckReason` helper + closed vocabulary; every STUCK branch in `RunChange` now carries a non-empty `TimeoutReason` (fixed 8 silent branches).
+- `WriteStuckReport` renders "Last Error" from typed fields only — `tailLogFile` dropped. Fixes the GAP-4 anti-diagnostic where subprocess DONE tails were lifted into STUCK_REPORT.md.
+- Source-level invariant test (`TestRunnerAlwaysPopulatesStuckReason`) that greps `runner.go` and points at the exact line number when a future STUCK branch forgets a reason.
+- GAP-4 integration regression test (`TestDecideOutcomeDowngradeFiresOnAllTasksDoneWithLesson`) exercising the full archive-to-dirty path.
+- Backfilled the live `stats-rollup-deadfield-fix_01` STUCK_REPORT.md; corrected stale `[DONE]` lesson heading for `lesson-heading-matches-outcome_01` → `[STUCK]`.
+
+**Tests:** 4 new + 3 updated; all 10 packages green.
+
+**5 ACs met.** Queue remaining: 1 (`discovered_audit_archive-clears-zombie-stuck-dirs_01`).

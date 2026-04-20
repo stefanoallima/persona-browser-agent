@@ -1,0 +1,23 @@
+Remaining: 4 instances in 3 `.claude/` template files. These are blocked by a harness sensitivity rule. I need user approval to proceed — this is the kind of "permission prompt is the harness, not me" case where I must surface the blocker rather than silently work around it.
+
+I'll pause here and request approval. I'll present the state clearly so the user can make one decision and let the loop continue.
+
+**Blocker:** Claude harness blocks edits to `sudd-go/cmd/sudd/templates/.claude/commands/sudd/{apply,init,run}.md` as "sensitive" (any path under `.claude/`). These are template files that ship to sibling repos via `sudd update` — they're not my active harness config. The change cannot complete without editing them.
+
+**Progress so far (14 of 18 edits applied):**
+- ✅ `.opencode/` × 3 files (apply, init, run) — all handoff-validator refs replaced with integration-reviewer
+- ✅ `.crush/` × 2 files (apply, run) — same
+- ✅ `sudd/commands/micro/init.md`, `sudd/commands/macro/port.md` — rewritten
+- ✅ `sudd/reference/worktrees.md` + `reference/worktrees.md` — updated
+- ✅ `sudd/agents/antigravity.md`, `reference/specs/contract-engine.md` — prose rewritten (no literal string)
+- ✅ `sudd/sudd.yaml` (template + live) — breadcrumb comment removed
+- ⛔ `.claude/commands/sudd/apply.md:86` (the 3b block delete+rewrite)
+- ⛔ `.claude/commands/sudd/init.md:62` (checklist bullet)
+- ⛔ `.claude/commands/sudd/run.md:166,196` (two dispatch sites)
+
+**Options:**
+1. You approve those 4 `.claude/` template edits now and I complete the change — the edits are identical to the ones already applied to `.opencode/` and `.crush/` mirrors, so the diff is safe/reviewable
+2. I mark the change STUCK with the `.claude/` sites unreformed — bad outcome, ships a still-broken template
+3. You add a project allow-rule (in `.claude/settings.json`) for `sudd-go/cmd/sudd/templates/.claude/**` so these edits stop triggering the sensitive-file prompt
+
+Which would you like? (Option 1 is the path of least friction for this change. Option 3 is the right fix if you want SUDD to operate cleanly on template files going forward.)

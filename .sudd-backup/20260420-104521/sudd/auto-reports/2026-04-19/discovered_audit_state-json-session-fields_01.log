@@ -1,0 +1,12 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE — discovered_audit_state-json-session-fields_01: **DONE**
+═══════════════════════════════════════
+
+**What shipped** (commit `2d4e826`):
+- `ClearChangeState()` now resets 6 per-change flags (was 3): adds `personas_validated`, `architecture_reviewed`, `design_gate_passed` + `design_gate_score` (null).
+- New `State.MarkSessionEnd(mode)` writes `mode`, `last_command: "sudd:auto"`, `last_run` at session end.
+- Wired from `runAutoCmd` via a new `lastMode` loop local, merged into the existing session-clear block.
+
+**Why the smaller fix**: The proposal sketched dropping 4 fields from the schema; those flags turned out to be the coordination surface for ~30 template files + `run.md` resume logic. Populated session-scope, reset per-change — no template churn.
+
+**Validation**: `go test ./...` green across all 10 packages. 4 new/extended unit tests. SUMMARY.md has canonical `## What Changed / ## Validation / ## Lessons` headings so pre-archive check passes.

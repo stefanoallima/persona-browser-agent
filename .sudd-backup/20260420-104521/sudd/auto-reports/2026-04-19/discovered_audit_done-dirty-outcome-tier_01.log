@@ -1,0 +1,18 @@
+═══════════════════════════════════════  
+  SUDD SESSION COMPLETE  
+═══════════════════════════════════════  
+**Mode:** brown  
+**Change:** discovered_audit_done-dirty-outcome-tier_01 — **DONE**  
+**Tasks completed:** 11/11  
+**Tests:** 11/11 packages pass (`go test ./... -count=1`)  
+**Commit:** `feb6549` feat(discovered_audit_done-dirty-outcome-tier_01)  
+
+## Summary
+
+Implemented the DONE_DIRTY outcome tier end-to-end as 8 symmetric touch points mirroring existing STUCK/DONE analogues. The runner now detects shipped-but-hygiene-imperfect changes via git HEAD SHA capture + lesson-recorded guard, routes them to `sudd/changes/dirty/{id}/` with a machine-written `FOLLOWUP.md`, and surfaces them in both the morning report and `CURRENT_STATE.md`.
+
+Key design decision: tighter gate than the proposal — when `LessonRecorded` itself is the failing check, the outcome stays STUCK. A malformed lesson is load-bearing for the next session's learning-engine, so heading drift there can't be downgraded.
+
+All 3 pre-archive checks (LessonRecorded, SummaryHasCanonicalHeadings, TasksAllChecked) pass on the archived change. Back-fix of the 6 existing stuck entries is documented in log.md — 4 qualify for migration, deferred to a follow-up proposal per AC #8.
+
+**Remaining auto queue:** `discovered_audit_state-json-stats-rollup_01`, `green:vision` (the auto orchestrator will pick these up on next `sudd auto` invocation).

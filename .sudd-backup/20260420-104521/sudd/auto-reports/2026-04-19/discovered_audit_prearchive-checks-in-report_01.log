@@ -1,0 +1,15 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE — `discovered_audit_prearchive-checks-in-report_01`
+═══════════════════════════════════════
+
+**Outcome**: DONE → merged to `main` (`9703889`)
+
+**Changes**:
+- `sudd-go/internal/auto/report.go` — new `renderPreArchiveSection` + helpers, wired into `WriteReport`. Section is always emitted; disabled state is loud (`Registered: N (disabled via SUDD_PRE_ARCHIVE_CHECKS)`); failure list shows `{change_id}: {check_name} — {detail}`.
+- `sudd-go/internal/auto/report_test.go` — 4 new tests (Clean / WithFailures / Disabled / EmptySession). Existing tests untouched.
+- `sudd/memory/lessons.md` — lesson appended.
+- `sudd/state.json` — change dequeued; queue still has 6 brown proposals.
+
+**Verification**: `go test ./internal/auto/` green; `go build ./...` clean; smoke render captured in `log.md`.
+
+**Approach note** (small internal report-rendering change): used compressed planning (no separate research/persona dispatch) since the proposal was self-contained, the persona was the existing default, and all data was already on `ChangeResult`. No new state-threading was needed in `runner.go`.

@@ -1,0 +1,13 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+
+**Mode:** brown · **Change:** `discovered_audit_current-state-tldr-filesystem-truth_01` → DONE
+
+**TL;DR**: `CURRENT_STATE.md`'s TL;DR was LLM-synthesized and could lie about counts (audit GAP-2: said "6 active, 4 stuck" while filesystem had 1 and 7). Fixed by prepending a deterministic `N active, M stuck, …` line derived from the same `Snapshot` that fills the body — they now align by construction. `AssertTLDRMatchesBody` runs inside `WriteCurrentState` so any future drift becomes a returned error, not a silent lie. Session-end refresh moved into `finalizeAutoSession`'s defer so panic/signal/budget exits also refresh.
+
+**Files changed:** 4 source (render.go, write.go, integration_test.go, render_test.go) + auto.go + auto_finalize_test.go + 6 archive artifacts + lessons.md + state.json + CURRENT_STATE.md.
+
+**Tests:** 7 new (`TestTLDRCountsMatchFilesystem`, `TestRenderFailsOnTLDRBodyMismatch`, `TestRefreshedAtAdvancesEveryRender`, `TestAssertTLDRMatchesBody_Happy`, `TestCurrentStateTLDRMatchesFilesystem`, `TestRefreshPassesAssertionOnNormalBodies`, `TestFinalizeAutoSession_RefreshesCurrentState`). Full `go test ./...` green across 11 packages. Live smoke test: rebuilt binary, refreshed working repo, header now reads filesystem truth.
+
+**Committed:** `1ddd592 fix(state): anchor CURRENT_STATE TL;DR to filesystem truth`. Queue has 3 more `discovered_audit_*` proposals waiting.

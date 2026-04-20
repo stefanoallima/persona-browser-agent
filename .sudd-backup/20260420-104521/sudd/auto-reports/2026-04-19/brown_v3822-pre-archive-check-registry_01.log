@@ -1,0 +1,28 @@
+```
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Mode: brown
+Change: brown_v3822-pre-archive-check-registry_01
+Outcome: DONE
+Gate score: 99/100 EXEMPLARY (persona: sudd-maintainer)
+Tasks: 10/10 completed
+Retries: 0
+Archived: sudd/changes/archive/brown_v3822-pre-archive-check-registry_01_DONE/
+═══════════════════════════════════════
+```
+
+## What shipped
+
+Consolidated the three session #2 pre-archive assertions into a single Go-enforced registry in `sudd-go/internal/auto/checks.go`. The runner now invokes every registered check after the CLI subprocess exits and before accepting DONE; any failure downgrades the outcome to STUCK, reverts `archive/{id}_DONE/` → `stuck/{id}/`, and writes a `## Pre-Archive Check Failures` section into `STUCK_REPORT.md`. `LessonRecorded` rewritten from `bytes.Contains` to a structural line scanner (heading form + ≥3 contiguous body lines). `MoveStuckToActive` no longer deletes `STUCK_REPORT.md`. `sudd doctor` gained a `Checks` row listing all N registered checks (flags `(DISABLED via SUDD_PRE_ARCHIVE_CHECKS=off)` when the kill-switch is set).
+
+## Verification
+
+- `go test ./... -count=1` — all 8 packages green
+- `./bin/sudd doctor --fresh` — `Checks ✓ pre-archive check registry — 3 registered: LessonRecorded, TasksAllChecked, SummaryHasCanonicalHeadings`
+- 22 historical `lessons.md` entries all pass `TestLessonsMdAllEntriesStructural`
+- Integration tests prove DONE→STUCK downgrade, archive revert, kill-switch, and happy-path baseline
+
+## Not committed
+
+Per your CLAUDE.md, I didn't run `git commit` or `git merge`. Review the diff and commit when ready — the archive is in place at `sudd/changes/archive/brown_v3822-pre-archive-check-registry_01_DONE/`.

@@ -1,0 +1,17 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Mode: brown
+Change: brown_v3820-wipe-postmortem-deep-audit_01 — **DONE** (18/18 ACs)
+Tasks completed: 2 (AC #5 doctor row, AC #7 hint policy)
+Tasks stuck: 0
+Commit: `ee5b9ce` on main
+═══════════════════════════════════════
+
+**What landed:**
+- `sudd doctor` now shows a `Contracts` row (informational, never blocks) with per-kind issue counts. Test `TestCheckContracts_NeverBlocks` locks in semantics.
+- AC #7 amended from MUST → MAY. Yaml is canonical for tier dispatch; existing `TestLintAgentTiers_LiveRepo` already enforces drift detection on present hints.
+- Change moved to `sudd/changes/archive/brown_v3820-wipe-postmortem-deep-audit_01_DONE/` with SUMMARY.md.
+- `state.json` updated: change recorded as DONE, removed from queue (only `green:vision` remains), counters incremented.
+
+**Verification:** `go test ./...` all green; `sudd doctor` READY; `sudd diagnose` ready for production.

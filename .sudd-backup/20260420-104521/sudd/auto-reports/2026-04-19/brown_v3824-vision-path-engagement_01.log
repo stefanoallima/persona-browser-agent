@@ -1,0 +1,19 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+
+**Mode:** brown · **Change:** brown_v3824-vision-path-engagement_01
+**Outcome:** DONE · **Gate:** 92/100 (PASS, no blockers)
+**Tasks completed:** 15/15 · **Tests:** all 10 packages green
+
+**What shipped (TL;DR):**
+- New `internal/vision/` package (~360 LOC + 24 tests) — `MigrateVisionMD`, `AppendPathEntry`, `AppendDetour`, `BuildContext`, `DetectDivergencePrompt`, `PromptDirectionCheck`, fail-soft tag extraction.
+- Hooks: post-`os.Rename` in `performArchival`; preflight + session-end in `sudd auto` (60s default-skip + TTY guard); `runInit` (live + embedded); skipped from the protected `runLiveUpdate` path so the vision.md sanctity test still passes.
+- New CLI `sudd vision context` consumed by `/sudd-new` and `/sudd-chat`; AGENTS-SUDD.md gains a Vision Path Engagement section.
+- Kill switch `SUDD_VISION_PATH=off`. Soft-dep on v3823 — fail-softs cleanly when CURRENT_STATE.md is absent.
+- Dogfooded: `sudd/vision.md` is now migrated with v3824 itself as the first `## Current Path` entry.
+
+**Notes for the next session:**
+- Queue still has `brown_v3823-current-state-doc_01`. Once it ships, future archives will start carrying `[ON-PATH]/[MOUNTAIN]/[DIVERGENT]` tags automatically.
+- The remaining 3 discovered_audit_* changes in `active/` are untouched (not in queue).
+- I did NOT git commit — your standing rule is to commit only when explicitly asked. Run `git add -A && git commit` when you're ready, or tell me to.
