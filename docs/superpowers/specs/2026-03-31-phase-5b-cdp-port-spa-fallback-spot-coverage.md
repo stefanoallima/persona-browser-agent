@@ -1,3 +1,11 @@
+<!-- SUDD-PORTED-v1 -->
+> **PORTED TO SUDD** — this artifact was translated into SUDD shape.
+> Canonical location: sudd/changes/inbox/ported-superpowers-2026-03-31-phase-5b-cdp-port-spa-fallback-spot-coverage
+> Do not continue work in this file — SUDD now owns this change.
+> Future AI sessions: default to SUDD workflow (see AGENTS.md).
+
+---
+
 # Phase 5b: CDP Port Export + SPA Fallback + Spot Check Coverage
 
 **Date**: 2026-03-31

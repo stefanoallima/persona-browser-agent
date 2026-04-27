@@ -1,0 +1,15 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+**Mode:** brown
+**Change:** `discovered_audit_session-start-handoff-sync_01` — **DONE**
+**Tasks completed:** 1 / 1
+**Outcome:** Closed GAP-002 + GAP-003
+
+**What landed:**
+- `sudd/AGENTS-SUDD.md` — session-start CURRENT_STATE.md block synced from template (byte-equal)
+- `sudd/commands/macro/run.md` — Step 0-first handoff block synced from template (byte-equal)
+- `sudd-go/internal/installer/framework_integrity_test.go` — new `TestFrameworkIntegrity_LiveMatchesTemplate_SessionStartBlocks` regression guard (verified it catches drift with a clear remediation message)
+- `sudd/memory/lessons.md` + `SUMMARY.md` (all 4 canonical headings) + archive to `_DONE`
+- `go test ./... -count=1` → green across all 10 packages
+═══════════════════════════════════════

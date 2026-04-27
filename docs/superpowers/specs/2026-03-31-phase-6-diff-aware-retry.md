@@ -1,3 +1,11 @@
+<!-- SUDD-PORTED-v1 -->
+> **PORTED TO SUDD** — this artifact was translated into SUDD shape.
+> Canonical location: sudd/changes/inbox/ported-superpowers-2026-03-31-phase-6-diff-aware-retry
+> Do not continue work in this file — SUDD now owns this change.
+> Future AI sessions: default to SUDD workflow (see AGENTS.md).
+
+---
+
 # Phase 6: Diff-Aware Retry Optimization
 
 **Date**: 2026-03-31

@@ -1,0 +1,8 @@
+Permission needed for sensitive template files. Stefano, these 4 edits modify shipped Claude templates under `sudd-go/cmd/sudd/templates/.claude/commands/sudd/`:
+
+1. **apply.md** — delete the 8-line `### 3b. Handoff Validation` block, renumber `3c → 3b`
+2. **init.md** — change `agents/handoff-validator.md` → `agents/integration-reviewer.md` in checklist
+3. **run.md** (line 166) — `Task(agent=handoff-validator)` → `Task(agent=integration-reviewer, scope=task)`
+4. **run.md** (line 196) — `run 3d handoff-validator on merged result` → `run 3d integration-reviewer on merged result`
+
+These are exactly the edits the design.md prescribes. Approve to proceed?

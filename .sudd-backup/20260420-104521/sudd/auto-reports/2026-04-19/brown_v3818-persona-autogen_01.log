@@ -1,0 +1,20 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+- **Mode:** brown
+- **Change:** `brown_v3818-persona-autogen_01` → **DONE**
+- **Tasks completed:** 11/11, all 17 ACs covered
+- **Go:** `go test ./...` all packages pass
+- **Files touched:** 11 (5 Go, 6 markdown, plus plan/design/specs/log/summary artifacts)
+- **Archived at:** `sudd/changes/archive/brown_v3818-persona-autogen_01_DONE/`
+- **Queue remaining:** 3 discovered changes (learning-pipeline / tasks-completion / summary-canonical-headings)
+
+**Key deliverables:**
+- `installer.PersonasAreDefaultOnly` + `IsTemplatePersona` with md5 + 50-byte floor (11 tests)
+- `doctor.CheckPersonas` row — informational Pass (never blocks bootstrap)
+- `run.md` Step 0e (top-level synthesis) + Step 0d (per-change enrichment)
+- `plan.md` STEP 5.6 (3-round rubric-adversary cycle) + specs Handoff Contracts table
+- `gate.md` Step 0b (change-level contract-verifier)
+- `task-discoverer.md` Rule #6 (persona-required discovery contract)
+
+No agent files rewritten (proposal's non-acceptance clause respected).

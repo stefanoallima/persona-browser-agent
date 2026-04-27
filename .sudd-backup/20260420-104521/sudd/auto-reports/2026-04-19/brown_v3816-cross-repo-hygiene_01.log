@@ -1,0 +1,16 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+
+**Mode:** brown | **Change:** `brown_v3816-cross-repo-hygiene_01` → **DONE**
+**Gate score:** 98/100 | **Tasks:** 4/4 completed | **Retries:** 0 | **Stuck:** 0
+
+**Shipped** (`feat(v3.8.16)` → commit `5da31f6`):
+- `sudd status --all-siblings` — now shows Stuck + LastAuto columns; stuck repos flip to RED.
+- `sudd metrics [target]` — new subcommand (shipped/retries/STUCK rate/median time/per-tier).
+- `sudd metrics --all-siblings` — fleet table + grand total across 16 sibling repos.
+- `sudd doctor` — drift-warning Config row when target is ≥2 minors behind (non-blocking).
+
+**Verified:** `go build ./...` clean, `go test ./...` 20 new tests green + 0 regressions, all four commands smoke-tested end-to-end against 16 live sibling repos. Drift fires correctly for `web-bundles@3.3.0` (5 minors) and stays silent for `consumer_insights_ai@3.8.20` (1 minor).
+
+**Archive:** `sudd/changes/archive/brown_v3816-cross-repo-hygiene_01_DONE/` (proposal, specs, design, tasks, log, SUMMARY).

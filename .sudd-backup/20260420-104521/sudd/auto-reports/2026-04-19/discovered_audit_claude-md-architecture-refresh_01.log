@@ -1,0 +1,18 @@
+```
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Mode: brown
+Change: discovered_audit_claude-md-architecture-refresh_01 → DONE
+Tasks completed: 1
+Tasks stuck: 0
+Tasks blocked: 0
+Commit: aa74f66
+═══════════════════════════════════════
+```
+
+**TL;DR**: Refreshed CLAUDE.md + README.md to v3.8.x reality (35 agents, all 17 root cobra subcommands enumerated, `vision`/`state` packages and docs added, v3.6 → v3.8.x). Added `TestFrameworkIntegrity_DocAgentCountMatchesLive` regression guard so the agent-count claim never silently drifts again. 12/12 framework integrity tests pass; `go build ./...` clean. Archived to `_DONE/` with SUMMARY.md + log.md, state.json updated, committed as `aa74f66`.
+
+Note: the proposal mentioned a `fleet` subcommand but `cmd/sudd/fleet.go` registers no cobra command — excluded from the doc list with a note in SUMMARY.md.
+
+6 changes remain in the auto queue (vision-known-open-work-stale, handoff-validator-template-cleanup, stuck-report-rendering-gaps, done-dirty-outcome-tier, state-json-stats-rollup, vision). Re-invoke `sudd auto` or `/sudd:run brown <next-id>` to continue.

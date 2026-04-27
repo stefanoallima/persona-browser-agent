@@ -1,3 +1,11 @@
+<!-- SUDD-PORTED-v1 -->
+> **PORTED TO SUDD** — this artifact was translated into SUDD shape.
+> Canonical location: sudd/changes/inbox/ported-superpowers-2026-03-30-phase-1-schemas-and-fixtures
+> Do not continue work in this file — SUDD now owns this change.
+> Future AI sessions: default to SUDD workflow (see AGENTS.md).
+
+---
+
 # Phase 1: PB Rubrics, Schemas & Test Fixtures
 
 > **Status: COMPLETED** (2026-03-30). Schemas in `schemas/`, fixtures in `fixtures/`, rubric in `rubrics/`.

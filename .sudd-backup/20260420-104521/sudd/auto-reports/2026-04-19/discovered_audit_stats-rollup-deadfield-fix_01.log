@@ -1,0 +1,18 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+
+**Mode:** brown
+**Change:** `discovered_audit_stats-rollup-deadfield-fix_01` — **DONE**
+**Commit:** `370fe5a` on main
+
+**What shipped:**
+- `(*State).IncrementChangeStats(outcome)` — inline per-change stats bump in `internal/auto/state.go`.
+- `finalizeAutoSession` helper + deferred invocation in `cmd/sudd/auto.go` with panic recovery.
+- Removed redundant session-end `RollupSessionStats` block.
+
+**Tests:** 4 + 12 new; all 11 packages green; binary builds clean.
+
+**All 5 ACs met:** stats sum = len(ChangesProcessed); stop_reason non-empty on 8/8 enum paths; inline-increment survives simulated panic; cold-start backfill wiring preserved; `go test ./internal/auto/` passes.
+
+Queue remaining: 4 changes.

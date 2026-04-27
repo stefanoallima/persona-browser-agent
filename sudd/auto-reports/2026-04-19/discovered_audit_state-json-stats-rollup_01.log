@@ -1,0 +1,16 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE — discovered_audit_state-json-stats-rollup_01 → DONE
+═══════════════════════════════════════
+
+**TL;DR:** `state.json.stats.*` is no longer a dead field. Rolled up from `auto_session.changes_processed[*].outcome` at session end, one-shot-backfilled from history at session start (sentinel-guarded), and surfaced in `sudd status`.
+
+**Touch points (8 files, 539+ LOC, 1 commit):**
+- `sudd-go/internal/auto/state.go` — new `RollupSessionStats` / `MaybeBackfillSessionStats` / `GetSessionStats`
+- `sudd-go/cmd/sudd/auto.go` — session-start backfill + session-end rollup
+- `sudd-go/cmd/sudd/main.go` — `Session stats:` line in `sudd status`
+- `sudd/state.schema.json` + templated mirror — added `total_done_dirty`, `stats_seeded` (optional, no renames)
+- `sudd-go/internal/auto/state_test.go` — 7 new tests, all green
+- `sudd/memory/lessons.md` — canonical `### [DONE]` entry
+- archive dir with SUMMARY/design/log/tasks/proposal
+
+**Verification:** `go build ./...` clean; `go test ./...` green across all 10 packages; `sudd status` renders the new line. Pre-archive contract (canonical SUMMARY headings + lesson recorded) validated before the `mv`. Committed as `501c1e8`.

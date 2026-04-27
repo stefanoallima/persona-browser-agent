@@ -1,0 +1,16 @@
+═══════════════════════════════════════
+**SUDD SESSION COMPLETE**
+═══════════════════════════════════════
+- **Mode**: brown
+- **Change**: `discovered_audit_session-log-cleanup_01` → **DONE**
+- **Tasks**: 6/6 completed, 0 stuck, 0 blocked
+- **Commit**: `beebbac` + merge `2dfd775` on `main`
+
+**What shipped:**
+Retired `sudd/memory/session-log.md` to a 3-line retirement-pointer redirecting readers to `sudd/auto-reports/{YYYY-MM-DD}/summary.md` + `sudd/state.json.auto_session`. Updated writer directives across `monitor.md` (live + embedded Go template), every installer-time writer (`install.sh`, `init.md` for opencode + live framework + Go templates), and the architecture Heartbeat row in `reference/specs/safeguards.md`. Appended a pattern-bearing lesson to `sudd/memory/lessons.md`.
+
+**Validation**: `go test ./...` green (10/10), `go build` clean, pre-archive check registry all-green (LessonRecorded ✓, TasksAllChecked ✓, SummaryHasCanonicalHeadings ✓), `sudd doctor` healthy.
+
+**Known residual** (documented in SUMMARY.md §Known Residual): Two `.claude/`-scoped files — `.claude/skills/sudd-init/SKILL.md` and `sudd-go/cmd/sudd/templates/.claude/commands/sudd/init.md` — still contain the old writer directive. Edits under `.claude/` are permission-gated and the interactive approval was declined. Proposed one-approval follow-up: `discovered_audit_session-log-claude-mirror_01`.
+
+**Queue remaining**: 7 discovered_audit_* changes (prearchive-checks-in-report, state-json-session-fields, browser-use-yaml-config, session-start-handoff-sync, claude-md-architecture-refresh, vision-known-open-work-stale, handoff-validator-template-cleanup) — ready for the next `/sudd:run brown {id}` or `sudd auto`.

@@ -1,0 +1,17 @@
+Change committed and archived DONE. Session summary:
+
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+**Change:** `discovered_audit_browser-use-yaml-config_01`
+**Mode:** brown · **Outcome:** DONE · **Tasks:** 1/1
+
+**Delivered:**
+- `browser_use:` block restored in both live `sudd/sudd.yaml` and the ship template.
+- `TestFrameworkIntegrity_BrowserUseInTemplate` regression guard locks it in.
+- Canonical lesson + SUMMARY written; both pre-archive checks (`LessonRecorded`, `SummaryHasCanonicalHeadings`) verified passing via in-package probe tests before archiving.
+- `go test ./...` green across 11 packages; binary builds cleanly.
+
+**Commit:** `842702a`
+
+Known follow-up noted in lesson and log.md § Known Risks: `runner.go → verifyBrowserTesting` still silently returns `""` when `sudd.yaml` has no `browser_use:` at all — a future change should convert that read-error path to a loud morning-report warning.

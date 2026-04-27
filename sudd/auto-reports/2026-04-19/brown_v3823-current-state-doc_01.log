@@ -1,0 +1,15 @@
+## Status: rehabilitation-ready, needs your call before archive
+
+**Validation — all green:**
+- `go test ./... -count=1` — 10/10 packages pass, includes `internal/state` (28 tests)
+- `sudd doctor --fresh` — all rows green, incl. `State ✓ CURRENT_STATE.md last refreshed 14m ago` (feature dogfooding itself)
+- Pre-archive `LessonRecorded` check: lesson at `sudd/memory/lessons.md:178` matches canonical `### [STUCK] brown_v3823-current-state-doc_01 — 2026-04-19` with 7 body lines — will pass this time
+
+**Working tree is a 3-change tangle (40+ files, ~1500±1600 ±)**:
+- **v3823 code (this change):** untracked `sudd-go/internal/state/` + `state_cli*.go` + `CURRENT_STATE.md`; modified hooks in `auto/runner.go`, `auto.go`, `doctor/checks.go`
+- **v3824 residue (previous run):** port-foreign stamps on 11 `docs/superpowers/` files; untracked `auto_vision.go`, `vision.go`, `internal/vision/`, `auto/checks.go`, `installer/personas*.go`
+- **Rehabilitation moves:** `sudd/changes/stuck/brown_v3823.../*` deleted, `sudd/changes/active/brown_v3823.../*` restored untracked; lesson appended; state.json reset
+
+**Key wrinkle (from the lesson itself):** The `state.Refresh` post-archive hook fires BEFORE the pre-archive-check revert, so if I re-archive as DONE, `CURRENT_STATE.md` and `vision.md ## Current Path` will be updated correctly — but the lesson explicitly calls for a v3825 follow-up to move the hook ordering permanently.
+
+**Recommend (unless you say otherwise):** archive v3823 as STUCK (matches the canonical lesson tag), commit v3823 scope only, file v3825 for the ordering fix, leave v3824 residue for separate commit. Want me to go that way, or do you want v3823 marked DONE (requires editing lesson tag [STUCK]→[DONE])?

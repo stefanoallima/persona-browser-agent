@@ -1,3 +1,11 @@
+<!-- SUDD-PORTED-v1 -->
+> **PORTED TO SUDD** — this artifact was translated into SUDD shape.
+> Canonical location: sudd/changes/inbox/ported-superpowers-2026-03-31-phase-5-style-verifier
+> Do not continue work in this file — SUDD now owns this change.
+> Future AI sessions: default to SUDD workflow (see AGENTS.md).
+
+---
+
 # Phase 5: Style Verifier — Deterministic Design Token Verification
 
 **Date**: 2026-03-31

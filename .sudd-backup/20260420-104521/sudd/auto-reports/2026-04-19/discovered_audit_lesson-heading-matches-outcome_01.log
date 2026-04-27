@@ -1,0 +1,14 @@
+All green post-commit.
+
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Mode: brown
+Change: discovered_audit_lesson-heading-matches-outcome_01 → **DONE**
+Tasks completed: 1 (inline planning, single S-sized task)
+Tasks stuck: 0
+Commit: `8a6031d fix(learning): rewrite lesson headings to match archival outcome`
+Lessons learned: 1 new entry in `sudd/memory/lessons.md`
+═══════════════════════════════════════
+
+**Summary**: The subprocess's `done.md` Step 2a writes `[DONE]` before the Go binary's pre-archive check registry decides the authoritative outcome, so downgrades to `DONE_DIRTY`/`STUCK` left stale headings. Added `auto.RewriteLessonHeading` helper called from `performArchival` post-rename; extended `LessonRecorded` regex with `DONE_DIRTY`; added a live-repo integrity test that surfaced 4 additional pre-existing mismatches beyond the 2 named in the proposal — all 6 repaired in-place. 21/21 tests pass, build clean.

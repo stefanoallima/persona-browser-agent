@@ -1,0 +1,19 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE — `brown_night-queue_01`
+═══════════════════════════════════════
+
+**Outcome**: DONE. Archived to `sudd/changes/archive/brown_night-queue_01_DONE/`.
+
+**Finding**: All 8 tasks were already implemented on 2026-03-31 (`f037e5b5`). The change was live and working — `sudd auto` is what runs the whole queue — but was never formally archived: no `log.md`, proposal still `proposed`, still sitting in `active/`.
+
+**Work this session**:
+1. Built + ran full test suite. 1 failure: `TestRunChange_Timeout` on macOS — fixture called `sleep` as a CLI binary, but `RunChange` always prepends `-p <prompt>` which `sleep` rejects.
+2. Fixed by replacing `sleep` with a temp script that runs `exec sleep 60`. The `exec` matters: without it, SIGKILL hit the shell, left an orphan `sleep` child holding the stdout pipe open, and the test's `io.Copy` goroutines deadlocked (took 30s to time out). `runner_test.go:79-86`.
+3. All tests pass, vet clean.
+4. Wrote `log.md`, updated proposal status → done, moved to archive, created `SUMMARY.md`.
+5. Updated `state.json`: dequeued `brown_night-queue_01`, recorded DONE, bumped stats (8 tasks) + discovery/audit counters.
+
+**Queue remaining**: 5 brown + 1 green vision.
+**Next up**: `brown_v3816-cross-repo-hygiene_01`.
+
+I did not commit — per CLAUDE.md, commits happen only on explicit request. Ready to commit on your word, or to proceed to the next change.

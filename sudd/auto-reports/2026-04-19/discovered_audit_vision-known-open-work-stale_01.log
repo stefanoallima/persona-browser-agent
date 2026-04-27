@@ -1,0 +1,16 @@
+```
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Mode: brown
+Change: discovered_audit_vision-known-open-work-stale_01 → DONE
+Tasks completed: 1
+Gate score: 100/100
+Lessons learned: 1 new (tags: framework, vision-md, doc-drift, single-source-of-truth)
+Commit: 221da0d
+═══════════════════════════════════════
+```
+
+**What shipped:** Deleted the stale `## Known Open Work` table from `sudd/vision.md` (listed four already-archived `brown_v3817`–`brown_v3820` changes as open). Replaced with a one-line pointer to `## Current Path` + `sudd/changes/active/`. All four acceptance criteria verified by grep; `go test ./internal/vision/` still passes. Lesson recorded, SUMMARY.md has canonical headings (`## What Changed`, `## Validation`, `## Lessons`), archive is clean — the two pre-archive check failures that STUCK'd the previous change are avoided here.
+
+**Queue remaining:** 4 discovered proposals + `green:vision` (not processed in this invocation — scope was the single change-id).

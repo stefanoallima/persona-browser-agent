@@ -1,0 +1,9 @@
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+- **Mode**: brown, change `discovered_audit_archive-clears-zombie-stuck-dirs_01`
+- **Outcome**: DONE (commit `f200569`)
+- **What shipped**: `performArchival` now sweeps `sudd/changes/stuck/{id}/` when a change of the same id archives as DONE or DONE_DIRTY (fail-soft, logs to `sudd/memory/session-log.md`). STUCK outcome preserves its own stuck dir.
+- **Tests added**: `TestArchivalRemovesZombieStuckDir` (DONE + DONE_DIRTY), `TestArchivalSTUCKPreservesStuckDir` (negative contract), `TestNoChangeAppearsInBothArchiveAndStuck` (synthetic-fixture integrity guard). All 11 packages pass.
+- **One-time cleanup**: N/A tuple — live-repo archive∩stuck intersection was already empty (prior zombies cleaned by commit 7f574c4 before this change ran). Verified and recorded to session-log.
+- **Lesson + SUMMARY** land under their canonical headings; pre-archive checks satisfied.

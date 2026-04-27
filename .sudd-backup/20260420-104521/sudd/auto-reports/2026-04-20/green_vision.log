@@ -1,0 +1,13 @@
+The edits to `.claude/commands/sudd/{apply,init,run}.md` are flagged as sensitive — they affect the shipping templates that propagate to every sibling repo. This is exactly what the change is *about*, but the permission prompt requires your approval.
+
+**What I need to do** (all targeted edits, no scope creep):
+
+1. **`.claude/commands/sudd/apply.md`** — replace `Task(agent=handoff-validator):` block at line 84-94 with `integration-reviewer, scope=task` block (mirroring the already-edited .opencode/.crush versions).
+2. **`.claude/commands/sudd/init.md`** — remove line 62 `10. agents/handoff-validator.md`, renumber 11-19 → 10-18.
+3. **`.claude/commands/sudd/run.md`** — replace lines 166 + 196 with `integration-reviewer, scope=task` / `scope=change`.
+4. **Live `sudd/`** files: antigravity.md, commands/micro/init.md, commands/macro/port.md, reference/worktrees.md.
+5. **`reference/specs/contract-engine.md`** — drop the two handoff-validator references.
+6. **`sudd-go/internal/installer/framework_integrity_test.go`** — add `TestFrameworkIntegrity_NoHandoffValidatorInTemplate`.
+7. Run `go test ./...`.
+
+Pause until you approve writing to `.claude/commands/sudd/*` (or grant general permission). Everything else is ready to go in one batch.

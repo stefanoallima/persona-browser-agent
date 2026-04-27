@@ -1,0 +1,22 @@
+```
+═══════════════════════════════════════
+SUDD SESSION COMPLETE
+═══════════════════════════════════════
+Mode: brown
+Change: discovered_audit_tasks-completion-enforcement_01 → DONE
+Tasks completed: 5 / 5
+Commit: a2874bf
+═══════════════════════════════════════
+```
+
+**Shipped**:
+- `done.md` Step 2d + `run.md` Step 6d: pre-archive `grep -c '^- \[ \]'` assertion that blocks DONE `mv` when any box is unchecked. STUCK path intentionally bypassed.
+- `apply.md` Step 3f: tightened to mandate an Edit-tool call (not prose) at task-close write site.
+- `sudd-go/internal/auto/tasks.go`: `TasksAllChecked(projectDir, changeID)` canonical Go form.
+- `sudd-go/internal/auto/tasks_test.go`: 6 unit tests + `TestDoneMdContainsTasksAssertion` integrity test that scans done.md for the Step 2d marker.
+- Backfilled `brown_v3816-cross-repo-hygiene_01_DONE/tasks.md`: 22 `[ ]` → `[x]`.
+- Pattern `mechanical-enforcement` promoted EMERGING → ESTABLISHED (3 occurrences); synced to `~/.sudd/learning/patterns.md`.
+
+**Deferred** (per proposal's out-of-scope clause): `tasks_total=0` telemetry for v3.8.18/v3.8.20 was misdiagnosed — those changes use `- Acceptance:` sub-bullets with no top-level checkboxes; the parser is correct. Format normalization is a separate change.
+
+**Queue remaining**: 1 (`discovered_audit_summary-canonical-headings_01`).
