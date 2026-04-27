@@ -120,12 +120,12 @@ Summary: 2/3 passed, 1 failed
 For each failing test:
 
 ```
-Dispatch(agent=blocker-detector):
+Task(agent=blocker-detector):
   ERROR: {test failure}
   Classify: bug | spec_issue | test_issue
 
 If bug:
-  → Dispatch(agent=coder): fix the bug
+  → Task(agent=coder): fix the bug
   → Re-run test
   → Max 2 quick fixes before escalation
 

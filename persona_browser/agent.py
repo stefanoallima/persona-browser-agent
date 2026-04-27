@@ -376,6 +376,8 @@ async def run_persona_test(
     form_data: str = "",
     screenshots_dir: str = "",
     record_video_dir: str = "",
+    manifest_path: str = "",
+    app_domains: Optional[list] = None,
 ) -> dict:
     """Backward-compatible wrapper — calls run_navigator() internally.
 

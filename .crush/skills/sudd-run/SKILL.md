@@ -4,7 +4,7 @@ description: "Full autonomous SUDD workflow. Use when the user wants to build a 
 license: MIT
 metadata:
   author: sudd
-  version: "3.8.0"
+  version: "3.8.8"
 ---
 
 Full autonomous SUDD workflow. Runs the complete loop from vision to done.
@@ -91,9 +91,10 @@ DISCOVERY CHECK:
     → If no: fall through to legacy single-change creation below
 
   LEGACY FALLBACK (no discovery results, no existing proposals):
-    Generate change-id: green_{name}_{seq:02d}
+    Generate change-id: {NNN}_green_{name}_{seq:02d}
+      - NNN: count all dirs in changes/active/ + changes/archive/ + changes/stuck/, then +1, zero-pad to 3 digits
       - name: kebab-case from vision content
-      - seq: next available number
+      - seq: next available number for this mode
 
     Create: sudd/changes/active/{change-id}/
       - proposal.md (from vision)

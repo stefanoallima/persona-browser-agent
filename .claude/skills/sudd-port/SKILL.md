@@ -4,7 +4,7 @@ description: "Import or upgrade SUDD. Use when the user wants to upgrade or migr
 license: MIT
 metadata:
   author: sudd
-  version: "3.8.0"
+  version: "3.8.8"
 ---
 
 Port existing artifacts from other frameworks into SUDD structure. Supports 4 framework types with auto-detection and multi-framework merge.
@@ -282,14 +282,17 @@ docs/stories/{epic}/{story}/ACCEPTANCE_CRITERIA.md → success criteria
    - If no explicit personas found, create a single persona from project name + "User" (e.g., "VinumAI User") with role inferred from project type (e.g., "wine recommendation user")
 
 3. **Epic → Change mapping**:
+
+   **NNN (global creation order)**: Before creating any change directory, count all existing directories in `changes/active/`, `changes/archive/`, and `changes/stuck/`. NNN = that total + 1 (increment for each new change created in this session), zero-padded to 3 digits.
+
    - **If `docs/epics/` exists AND has subdirectories**: Each subdirectory → one SUDD change
-     - Change ID: `brown_port-{epic-name}_01` (sanitize: lowercase, replace spaces/underscores with hyphens, strip non-alphanumeric except hyphens)
+     - Change ID: `{NNN}_brown_port-{epic-name}_01` (sanitize: lowercase, replace spaces/underscores with hyphens, strip non-alphanumeric except hyphens)
      - Epic description → `proposal.md`
    - **If `docs/epics/` exists but is empty** (or contains only README): treat as "doesn't exist", fall through
    - **If `docs/stories/` exists (no epics/)**:
      - With subdirectories: each subdir → one SUDD change
      - Flat (just .md files): all stories → tasks in one change
-   - **If neither exists (or both empty)**: Create single change `brown_port-bmad_01` from PRD content
+   - **If neither exists (or both empty)**: Create single change `{NNN}_brown_port-bmad_01` from PRD content
 
 4. **Story → Task mapping**: For each story found:
    - `story.md` content → task description in `tasks.md`
@@ -340,7 +343,7 @@ AGENTS.md / CLAUDE.md / GEMINI.md → sudd/memory/lessons.md (coding conventions
 2. **PRD Decomposition**: Use the same KEYWORD TABLE and **Confidence Scoring** from STEP 3 (BMAD), subsection 1 "PRD Decomposition". For each `##`/`###` header, match keywords to route sections to vision/personas/specs/design. Apply the same confidence scoring (definite/probable/ambiguous/uncertain) and log ambiguous sections to log.md. The difference from BMAD: no epic/story structure to process.
 
    - If PRD has **no recognizable section headers** → treat entire document as `sudd/vision.md`
-   - Create single change: `brown_port-prd_01`
+   - Create single change: `{NNN}_brown_port-prd_01`
    - Add `<!-- ported from: prd [PRD.md] -->` at top of each output
 
 3. **Supplementary files** (if they exist):
@@ -442,7 +445,7 @@ reference/*.md                           → sudd/memory/lessons.md (one entry p
 4. **Plan files**: Glob `.claude/` for files matching `*plan*.md` or `*implementation*.md`:
    - For each found file:
      - Sanitize filename for change ID: lowercase, replace spaces/underscores with hyphens, strip non-alphanumeric except hyphens
-     - Create `sudd/changes/active/brown_port-{sanitized-name}_01/proposal.md`
+     - Create `sudd/changes/active/{NNN}_brown_port-{sanitized-name}_01/proposal.md`
      - Write: source tag + file content as proposal body
      - Create empty `specs.md`, `design.md`, `tasks.md`, `log.md` placeholders
    - If no plan files found: skip silently (this step is optional)
@@ -735,28 +738,8 @@ State: brown mode, {phase} phase
 imported_from: {framework}
 
 Review the ported artifacts, then:
-  /sudd:status    — check what was created
-  /sudd:discover  — explore codebase and find gaps (auto-runs if discovery.auto_on_port)
-  /sudd:run       — start autonomous workflow
-```
-
-### Post-Port Discovery (v3.4)
-
-After port output, if `sudd.yaml → discovery.auto_on_port` is true (default):
-
-```
-Invoke /sudd:discover --force
-  → codebase-explorer: generates codebase-manifest.json
-  → alignment-reviewer: compares manifest vs ported docs
-  → task-discoverer: creates proposals from gaps
-
-This validates that ported artifacts match code reality and generates
-a backlog of actionable changes before /sudd:run begins.
-```
-
-If `auto_on_port` is false, suggest it in the output:
-```
-  💡 Run /sudd:discover to find gaps between docs and code
+  /sudd:status  — check what was created
+  /sudd:run     — start autonomous workflow
 ```
 
 ### Multi-framework merge
@@ -776,9 +759,8 @@ State: brown mode, build phase
 imported_from: openspec+bmad
 
 Review the ported artifacts, then:
-  /sudd:status    — check what was created
-  /sudd:discover  — explore codebase and find gaps
-  /sudd:run       — start autonomous workflow
+  /sudd:status  — check what was created
+  /sudd:run     — start autonomous workflow
 
 
 ---
