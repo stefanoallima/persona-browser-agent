@@ -21,3 +21,7 @@ poc/poc1_output.json
 poc/session.har
 poc/screenshots/
 poc/recordings/
+
+# Windows reserved name leaked from shell redirections
+nul
+**/nul
